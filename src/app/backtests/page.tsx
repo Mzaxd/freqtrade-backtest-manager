@@ -8,10 +8,50 @@ import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import Link from 'next/link'
 
+// 定义类型
+interface Strategy {
+  id: number
+  filename: string
+  className: string
+  description?: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface Config {
+  id: number
+  name: string
+  description?: string
+  data: any
+  createdAt: string
+  updatedAt: string
+}
+
+interface BacktestTask {
+  id: string
+  name: string
+  status: string
+  timerangeStart?: string
+  timerangeEnd?: string
+  createdAt: string
+  completedAt?: string
+  resultsSummary?: any
+  rawOutputPath?: string
+  logs?: string
+  strategyId: number
+  configId?: number
+  strategy?: Strategy
+  config?: Config
+}
+
 async function getBacktests() {
+  console.log('[DEBUG] 开始获取回测数据...')
   const response = await fetch('/api/backtests')
   if (!response.ok) throw new Error('Failed to fetch backtests')
-  return response.json()
+  const data = await response.json()
+  console.log('[DEBUG] 获取到的回测数据:', data)
+  console.log('[DEBUG] 第一个回测项的结构:', data[0])
+  return data
 }
 
 export default function BacktestsPage() {
@@ -20,7 +60,7 @@ export default function BacktestsPage() {
     queryFn: getBacktests,
   })
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
       case 'COMPLETED':
         return 'bg-green-100 text-green-800'
@@ -62,15 +102,15 @@ export default function BacktestsPage() {
       </div>
 
       <div className="space-y-4">
-        {backtests?.map((backtest: any) => (
+        {backtests?.map((backtest: BacktestTask) => (
           <Card key={backtest.id}>
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-semibold">{backtest.name}</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    策略: {backtest.strategy?.className} • 
-                    配置: {backtest.config?.filename}
+                    策略: {backtest.strategy?.className} •
+                    配置: {backtest.config?.name || '默认配置'}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     创建时间: {format(new Date(backtest.createdAt), 'PPpp', { locale: zhCN })}

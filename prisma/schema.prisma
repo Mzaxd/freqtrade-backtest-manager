@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 策略文件的元数据
 model Strategy {
   id            Int            @id @default(autoincrement())
   filename      String         @unique
@@ -21,36 +17,31 @@ model Strategy {
   backtestTasks BacktestTask[]
 }
 
-// 配置文件的元数据
 model Config {
   id            Int            @id @default(autoincrement())
-  filename      String         @unique
+  name          String
   description   String?
+  data          Json
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  backtestTasks BacktestTask[]
+  backtests     BacktestTask[]
+
+  @@unique([name])
 }
 
-// 核心表：存储每一次回测任务的信息和结果
 model BacktestTask {
   id             String    @id @default(cuid())
   name           String
-  status         String    // PENDING, RUNNING, COMPLETED, FAILED
+  status         String
   timerangeStart DateTime?
   timerangeEnd   DateTime?
   createdAt      DateTime  @default(now())
   completedAt    DateTime?
-
-  // 存储关键结果指标，用于快速预览和排序
   resultsSummary Json?
-  // 存储 Freqtrade 生成的原始结果文件路径
   rawOutputPath  String?
-  // 存储任务的完整日志 (用于失败排查)
   logs           String?
-
-  strategyId Int
-  strategy   Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
-
-  configId Int
-  config   Config @relation(fields: [configId], references: [id], onDelete: Cascade)
+  strategyId     Int
+  configId       Int?
+  config         Config?   @relation(fields: [configId], references: [id])
+  strategy       Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
 }
