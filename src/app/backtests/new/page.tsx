@@ -40,7 +40,7 @@ async function getConfigs() {
     throw new Error(error.error || 'Failed to fetch configs')
   }
   const data = await response.json()
-  return data.data || []
+  return data.data || data || []
 }
 
 async function createBacktest(data: any) {
@@ -69,12 +69,12 @@ export default function NewBacktestPage() {
   })
   const [error, setError] = useState<string | null>(null)
 
-  const { data: strategies, isLoading: strategiesLoading, error: strategiesError } = useQuery({
+  const { data: strategies, isLoading: strategiesLoading, error: strategiesError } = useQuery<Strategy[]>({
     queryKey: ['strategies'],
     queryFn: getStrategies,
   })
 
-  const { data: configs, isLoading: configsLoading, error: configsError } = useQuery({
+  const { data: configs, isLoading: configsLoading, error: configsError } = useQuery<Config[]>({
     queryKey: ['configs'],
     queryFn: getConfigs,
   })
@@ -187,7 +187,7 @@ export default function NewBacktestPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {strategies?.map((strategy: Strategy) => (
-                    <SelectItem key={strategy.id} value={strategy.id}>
+                    <SelectItem key={strategy.id} value={String(strategy.id)}>
                       {strategy.className}
                     </SelectItem>
                   ))}
@@ -203,7 +203,7 @@ export default function NewBacktestPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {configs?.map((config: Config) => (
-                    <SelectItem key={config.id} value={config.id}>
+                    <SelectItem key={config.id} value={String(config.id)}>
                       {config.name}
                     </SelectItem>
                   ))}
