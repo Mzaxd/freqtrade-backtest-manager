@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useForm, Controller, useFieldArray } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Info, Loader2, Save, Star } from 'lucide-react'
+import { Info, Loader2, Save, Star, Code, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 // 定义配置参数的接口
 interface Param {
@@ -89,6 +89,22 @@ const NewConfigForm: React.FC<NewConfigFormProps> = ({ initialData }) => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [params, setParams] = useState<ConfigFile | null>(null)
+  const [viewMode, setViewMode] = useState<'form' | 'json'>('form');
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+  } = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: initialData?.name || "",
+      description: initialData?.description || "",
+      data: initialData?.data || {},
+    },
+  });
 
   useEffect(() => {
     const fetchParams = async () => {
@@ -98,57 +114,35 @@ const NewConfigForm: React.FC<NewConfigFormProps> = ({ initialData }) => {
     }
     fetchParams()
   }, [])
-  
-
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData ?
-    {
-        name: initialData.name,
-        description: initialData.description || "",
-        data: initialData.data
-    } : {
-        name: "",
-        description: "",
-        data: Object.entries(params || {}).reduce((acc, [key, param]) => ({...acc, [key]: param.default}), {})
-    },
-  });
 
   useEffect(() => {
-      // 当 initialData 或 params 加载后，重置表单默认值
-      if (params) {
-          const defaultData = Object.entries(params).reduce(
-              (acc, [key, param]) => ({...acc, [key]: param.default}), {}
-          );
-          reset(initialData ? 
-            { name: initialData.name, description: initialData.description || "", data: {...defaultData, ...initialData.data} } :
-            { name: "", description: "", data: defaultData }
-          );
-      }
+    // 当 initialData 或 params 加载后，重置表单默认值
+    if (params) {
+        const defaultData = Object.entries(params).reduce(
+            (acc, [key, param]) => ({...acc, [key]: param.default}), {}
+        );
+        reset(initialData ? 
+          { name: initialData.name, description: initialData.description || "", data: {...defaultData, ...initialData.data} } :
+          { name: "", description: "", data: defaultData }
+        );
+    }
   }, [initialData, params, reset]);
 
   const mutation = useMutation({
     mutationFn: saveConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey:['configs']})
-      router.push('/configs')
-      // Show success toast
+      toast.success(initialData ? '配置已成功更新！' : '配置已成功创建！');
+      router.push('/configs');
     },
     onError: (error) => {
       console.error(error)
-      // Show error toast
       toast.error(`保存配置失败: ${error.message}`)
     },
   })
 
-  const onSubmit = (formData: any) => {
-    // 移除未定义或空的字段，以避免覆盖后端默认值
-    const cleanedData = { ...formData };
+  const onSubmit = (formData: z.infer<typeof formSchema>) => {
+    const cleanedData: any = { ...formData, data: formData.data };
     if (initialData?.id) {
         cleanedData.id = initialData.id;
     }
@@ -270,9 +264,8 @@ const NewConfigForm: React.FC<NewConfigFormProps> = ({ initialData }) => {
                   {...field}
                   id={fieldName}
                   type={param.type.includes('Integer') || param.type.includes('Float') ? 'number' : 'text'}
-                  // `onChange` is already handled by `field`
                   value={field.value === null || field.value === undefined ? '' : String(field.value)}
-                  onChange={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       const val = param.type.includes('Integer') || param.type.includes('Float')
                                   ? (e.target.value === '' ? null : Number(e.target.value))
                                   : e.target.value;
@@ -319,26 +312,100 @@ const NewConfigForm: React.FC<NewConfigFormProps> = ({ initialData }) => {
             </CardContent>
         </Card>
       
-      <Accordion type="multiple" defaultValue={['main']} className="w-full">
-        {Object.entries(groupedParams).map(([category, params]) => (
-          <AccordionItem value={category} key={category}>
-            <AccordionTrigger className="capitalize text-lg font-medium hover:no-underline">
-                 <div className="flex items-center">
-                    {category === 'main' && <Star className="h-5 w-5 mr-3 text-yellow-500 fill-yellow-400" />}
-                    {categoryTranslations[category] || category.replace(/_/g, ' ')}
-                 </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 p-4">
-                {Object.entries(params).map(([name, param]) => (
-                  <div key={name}>{renderField(name, param)}</div>
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
-      <div className="flex justify-end">
+      {viewMode === 'form' ? (
+        <Accordion type="multiple" defaultValue={['main']} className="w-full">
+          {Object.entries(groupedParams).map(([category, params]) => (
+            <AccordionItem value={category} key={category}>
+              <AccordionTrigger className="capitalize text-lg font-medium hover:no-underline">
+                   <div className="flex items-center">
+                      {category === 'main' && <Star className="h-5 w-5 mr-3 text-yellow-500 fill-yellow-400" />}
+                      {categoryTranslations[category] || category.replace(/_/g, ' ')}
+                   </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 p-4">
+                  {Object.entries(params).map(([name, param]) => (
+                    <div key={name}>{renderField(name, param)}</div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      ) : (
+        <Card>
+          <CardHeader>
+             <CardTitle>JSON 配置</CardTitle>
+             <CardDescription>直接编辑配置的 JSON 源代码。请确保格式正确。</CardDescription>
+          </CardHeader>
+          <CardContent>
+              <Controller
+                name="data"
+                control={control}
+                render={({ field }) => {
+                    const [jsonString, setJsonString] = useState(() => JSON.stringify(field.value, null, 2));
+                    const [error, setError] = useState<string | null>(null);
+
+                    useEffect(() => {
+                        const formValueString = JSON.stringify(field.value, null, 2);
+                        try {
+                            JSON.parse(jsonString);
+                             if (jsonString !== formValueString) {
+                                setJsonString(formValueString);
+                             }
+                        } catch (e) {
+                            // If current jsonString is invalid, don't overwrite it
+                        }
+                    }, [field.value, jsonString]);
+
+                    const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                        const newJsonString = e.target.value;
+                        setJsonString(newJsonString);
+                        try {
+                            const parsed = JSON.parse(newJsonString);
+                            setValue('data', parsed, { shouldValidate: true, shouldDirty: true });
+                            setError(null);
+                        } catch (err) {
+                            setError("JSON 格式错误: " + (err as Error).message);
+                        }
+                    };
+                    
+                    return (
+                        <div>
+                            <Label htmlFor="json-editor">配置 JSON</Label>
+                            <Textarea
+                                 id="json-editor"
+                                 value={jsonString}
+                                 onChange={handleJsonChange}
+                                 className="mt-1 font-mono h-[500px]"
+                                 placeholder="在此输入或粘贴 JSON 配置"
+                            />
+                            {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+                             {errors.data && <p className="text-sm text-destructive mt-2">{String(errors.data.message)}</p>}
+                        </div>
+                    );
+                }}
+              />
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex justify-end space-x-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setViewMode(viewMode === 'form' ? 'json' : 'form')}
+        >
+          {viewMode === 'form' ? (
+            <>
+              <Code className="mr-2 h-4 w-4" /> 查看 JSON
+            </>
+          ) : (
+            <>
+              <FileText className="mr-2 h-4 w-4" /> 查看表单
+            </>
+          )}
+        </Button>
         <Button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           {initialData ? '保存更改' : '创建配置'}
