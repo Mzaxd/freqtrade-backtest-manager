@@ -1,6 +1,8 @@
 import { spawn } from 'child_process'
 import { prisma } from '@/lib/prisma'
 import Redis from 'ioredis'
+import { Prisma } from '@prisma/client'
+import path from 'path'
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
@@ -16,33 +18,40 @@ export async function processBacktest(taskId: string) {
     const task = await prisma.backtestTask.findUnique({
       where: { id: taskId },
       include: { strategy: true, config: true },
-    })
+    });
 
     if (!task) {
       throw new Error(`Task ${taskId} not found`)
     }
 
-    const logs: string[] = []
+    const logs: string[] = [];
     
     // 构建 freqtrade 命令
-    const command = process.env.FREQTRADE_PATH || 'freqtrade'
+    const commandWithArgs = (process.env.FREQTRADE_PATH || 'freqtrade').split(' ')  
+    const command = commandWithArgs[0]
+    const baseArgs = commandWithArgs.slice(1)
+
+    const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || path.join(process.cwd(), 'ft_user_data');
+    const containerUserDataPath = process.env.FREQTRADE_CONTAINER_USER_DATA_PATH || '/freqtrade/user_data';
+
     const args = [
+      ...baseArgs,
       'backtesting',
-      '--config', `configs/${task.config.filename}`,
+      '--config', path.posix.join(containerUserDataPath, 'configs', task.config?.filename || ''),
       '--strategy', task.strategy.className,
-      '--strategy-path', 'strategies',
+      '--strategy-path', path.posix.join(containerUserDataPath, 'strategies'),
       '--timerange', `${task.timerangeStart?.toISOString().split('T')[0]}-${task.timerangeEnd?.toISOString().split('T')[0]}`,
       '--export', 'trades',
-      '--export-filename', `data/backtest_${taskId}.json`,
+      '--export-filename', path.posix.join(containerUserDataPath, 'data', `backtest_${taskId}.json`),
     ]
 
-    console.log(`Executing: ${command} ${args.join(' ')}`)
+    console.log(`Executing: ${command} ${args.join(' ')}`);
 
     // 启动子进程
     const child = spawn(command, args, {
-      cwd: process.cwd(),
+      cwd: userDataPath, // 设置CWD为用户数据目录
       env: { ...process.env },
-    })
+    } )
 
     // 实时日志处理
     child.stdout.on('data', (data) => {
@@ -50,7 +59,7 @@ export async function processBacktest(taskId: string) {
       logs.push(log)
       redis.publish(`logs:${taskId}`, log)
       console.log(`[${taskId}] ${log}`)
-    })
+    });
 
     child.stderr.on('data', (data) => {
       const log = data.toString()
@@ -69,7 +78,7 @@ export async function processBacktest(taskId: string) {
     if (exitCode === 0) {
       // 读取结果文件
       const fs = await import('fs').then(m => m.promises)
-      const resultPath = `data/backtest_${taskId}.json`
+      const resultPath = path.join(userDataPath, 'data', `backtest_${taskId}.json`);
       
       let resultsSummary = null
       try {
@@ -84,7 +93,7 @@ export async function processBacktest(taskId: string) {
           winRate: result.win_rate || 0,
           sharpeRatio: result.sharpe_ratio || 0,
           maxDrawdown: result.max_drawdown || 0,
-        }
+        }    
       } catch (error) {
         console.error('Failed to read result file:', error)
       }
@@ -95,7 +104,7 @@ export async function processBacktest(taskId: string) {
         data: {
           status: 'COMPLETED',
           completedAt: new Date(),
-          resultsSummary,
+          resultsSummary: resultsSummary ?? Prisma.JsonNull,
           rawOutputPath: resultPath,
           logs: fullLogs,
         },

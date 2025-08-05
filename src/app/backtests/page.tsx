@@ -1,12 +1,25 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import Link from 'next/link'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { Trash2, RefreshCw } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 
 // 定义类型
 interface Strategy {
@@ -49,7 +62,7 @@ async function getBacktests() {
   const response = await fetch('/api/backtests')
   if (!response.ok) throw new Error('Failed to fetch backtests')
   const data = await response.json()
-  console.log('[DEBUG] 获取到的回测数据:', data)
+  console.log('[DEBUG] 获取到的回测数据:', data);
   console.log('[DEBUG] 第一个回测项的结构:', data[0])
   return data
 }
@@ -58,7 +71,55 @@ export default function BacktestsPage() {
   const { data: backtests, isLoading } = useQuery({
     queryKey: ['backtests'],
     queryFn: getBacktests,
-  })
+  });
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/backtests/${id}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        throw new Error('Failed to delete backtest')
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['backtests'] })
+    },
+  });
+
+  const retryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/backtests/${id}/retry`, {
+        method: 'POST',
+      })
+      if (!response.ok) {
+        throw new Error('Failed to retry backtest')
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['backtests'] })
+    },
+  });
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id)
+    } catch (error) {
+      console.error('Failed to delete backtest:', error)
+      // Optionally, show an error message to the user
+    }
+  };
+
+  const handleRetry = async (id: string) => {
+    try {
+      await retryMutation.mutateAsync(id)
+    } catch (error) {
+      console.error('Failed to retry backtest:', error)
+      // Optionally, show an error message to the user
+    }
+  };
 
   const getStatusColor = (status: string): string => {
     switch (status) {
@@ -73,7 +134,7 @@ export default function BacktestsPage() {
       default:
         return 'bg-gray-100 text-gray-800'
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -119,7 +180,7 @@ export default function BacktestsPage() {
                     <p className="text-sm text-muted-foreground">
                       完成时间: {format(new Date(backtest.completedAt), 'PPpp', { locale: zhCN })}
                     </p>
-                  )}
+                 )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge className={getStatusColor(backtest.status)}>
@@ -128,6 +189,40 @@ export default function BacktestsPage() {
                   <Link href={`/backtests/${backtest.id}`}>
                     <Button variant="outline" size="sm">查看详情</Button>
                   </Link>
+                  {backtest.status === 'FAILED' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRetry(backtest.id)}
+                      disabled={retryMutation.isPending}
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  )}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>你确定吗?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          此操作无法撤销。这将永久删除您的回测记录。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(backtest.id)}
+                          >
+                          确认删除
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </CardContent>

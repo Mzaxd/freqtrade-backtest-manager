@@ -16,9 +16,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useState } from 'react'
+import toast from 'react-hot-toast'
 
-
-// 定义配置项的类型，与后端API返回的列表项一致
 interface ConfigListItem {
   id: number
   name: string
@@ -27,50 +27,57 @@ interface ConfigListItem {
   updatedAt: string
 }
 
-// API调用函数：获取配置列表
 const fetchConfigs = async (): Promise<ConfigListItem[]> => {
   const response = await fetch('/api/configs')
   if (!response.ok) {
-    throw new Error('Network response was not ok')
+    throw new Error('网络响应异常')
   }
   const result = await response.json()
   return result.data
 }
 
-// API调用函数：删除配置
 const deleteConfig = async (id: number): Promise<void> => {
   const response = await fetch(`/api/configs/${id}`, {
     method: 'DELETE',
   })
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.details || 'Failed to delete config');
+    const errorData = await response.json()
+    throw new Error(errorData.error || '删除配置失败')
   }
 }
 
 export default function ConfigsPage() {
   const queryClient = useQueryClient()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedConfig, setSelectedConfig] = useState<ConfigListItem | null>(null)
 
-  const { data: configs, isLoading, isError, error } = useQuery<ConfigListItem[]>({
+  const { data: configs, isLoading, isError, error: queryError } = useQuery<ConfigListItem[]>({
     queryKey: ['configs'],
     queryFn: fetchConfigs,
   })
 
-  const { mutate: deleteMutate, isPending: isDeleting } = useMutation({
+  const { mutate: deleteMutate, isPending: isDeleting, error: deleteError, reset } = useMutation({
     mutationFn: deleteConfig,
     onSuccess: () => {
-      // 当删除成功时，使'configs'查询失效，以便重新获取最新列表
       queryClient.invalidateQueries({ queryKey: ['configs'] })
-       // 这里可以添加一个 Toast 通知
+      setIsDialogOpen(false)
+      setSelectedConfig(null)
     },
-    onError: (error) => {
-      // 这里可以添加一个错误处理的 Toast 通知
-      console.error("Delete failed:", error.message)
+    onError: (error: Error) => {
+      toast.error(`删除失败: ${error.message}`)
     }
   })
 
-  const handleDelete = (id: number) => {
-    deleteMutate(id)
+  const handleOpenDialog = (config: ConfigListItem) => {
+    setSelectedConfig(config)
+    setIsDialogOpen(true)
+    reset() // 重置错误状态
+  }
+
+  const handleDelete = () => {
+    if (selectedConfig) {
+      deleteMutate(selectedConfig.id)
+    }
   }
 
   return (
@@ -97,12 +104,12 @@ export default function ConfigsPage() {
            <AlertTriangle className="h-5 w-5 mr-3" />
            <div>
             <p className="font-semibold">加载失败</p>
-            <p className="text-sm">{error?.message || '无法从服务器获取配置数据。'}</p>
+            <p className="text-sm">{queryError?.message || '无法从服务器获取配置数据。'}</p>
            </div>
         </div>
       )}
 
-      {configs && !configs.length && (
+      {configs && !configs.length && !isLoading && (
          <div className="text-center py-12 border-2 border-dashed rounded-lg">
             <h3 className="text-xl font-medium">没有找到任何配置</h3>
             <p className="text-muted-foreground mt-2 mb-6">开始您的第一次回测，请先创建一个新的配置吧！</p>
@@ -130,9 +137,9 @@ export default function ConfigsPage() {
                             <Edit className="h-4 w-4" />
                         </Link>
                     </Button>
-                    <AlertDialog>
+                    <AlertDialog open={isDialogOpen && selectedConfig?.id === config.id} onOpenChange={setIsDialogOpen}>
                       <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" disabled={isDeleting}>
+                        <Button variant="destructive" size="sm" onClick={() => handleOpenDialog(config)}>
                            <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -140,17 +147,17 @@ export default function ConfigsPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>您确定要删除吗?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            这个操作无法撤销。这将永久删除配置 “{config.name}” 并且与该配置关联的回测任务将无法再使用此配置。
+                            此操作无法撤销。这将永久删除配置 “{selectedConfig?.name}”。
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>取消</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => handleDelete(config.id)}
+                          <AlertDialogAction
+                            onClick={handleDelete}
                             className="bg-destructive hover:bg-destructive/90"
+                            disabled={isDeleting}
                           >
-                           {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            确定删除
+                           {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "确定删除"}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

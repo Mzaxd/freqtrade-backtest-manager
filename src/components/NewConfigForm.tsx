@@ -7,6 +7,7 @@ import * as z from 'zod'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Info, Loader2, Save, Star } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -61,7 +62,7 @@ const saveConfig = async ({ data, id }: { data: any, id?: number }) => {
 
   if (!response.ok) {
      const errorData = await response.json()
-    throw new Error(errorData.details || 'Failed to save configuration')
+    throw new Error(errorData.error || 'Failed to save configuration')
   }
 
   return response.json()
@@ -141,6 +142,7 @@ const NewConfigForm: React.FC<NewConfigFormProps> = ({ initialData }) => {
     onError: (error) => {
       console.error(error)
       // Show error toast
+      toast.error(`保存配置失败: ${error.message}`)
     },
   })
 

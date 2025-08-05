@@ -1,10 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import fs from 'fs';
+import path from 'path';
+import { pinyin } from 'pinyin';
+
+const getConfigsPath = () => {
+  const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || path.join(process.cwd(), 'ft_user_data');
+  return path.join(userDataPath, 'configs');
+};
+
+function generateSafeFilename(name: string): string {
+  const pinyinName = pinyin(name, {
+    style: 'normal',
+  }).join('');
+  return `${pinyinName.replace(/[\s\W]/g, '_')}.json`;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { name, description, data } = body;
+
+    if (
+      data.pairlists &&
+      Array.isArray(data.pairlists) &&
+      data.pairlists.some((p: any) => p.method === 'StaticPairList') &&
+      (!data.pair_whitelist ||
+        !Array.isArray(data.pair_whitelist) ||
+        data.pair_whitelist.length === 0)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Validation failed: Using StaticPairList requires a non-empty pair_whitelist.',
+        },
+        { status: 400 }
+      );
+    }
 
     if (!name || !data) {
       return NextResponse.json(
@@ -13,9 +45,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const filename = generateSafeFilename(name);
+    const configsPath = getConfigsPath();
+    await fs.promises.mkdir(configsPath, { recursive: true });
+    const configFilePath = path.join(configsPath, filename);
+    
+    // 如果 log_config 为 null，则从数据中删除它
+    if (data.log_config === null) {
+      delete data.log_config;
+    }
+
+    fs.writeFileSync(configFilePath, JSON.stringify(data, null, 2));
+
     const newConfig = await prisma.config.create({
       data: {
         name,
+        filename,
         description,
         data,
       },
@@ -31,7 +76,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Error creating configuration:', error);
-    //
     if (error instanceof Error && 'code' in error && error.code === 'P2002') {
        return NextResponse.json(
         {
@@ -84,6 +128,7 @@ export async function GET(request: NextRequest) {
           description: true,
           createdAt: true,
           updatedAt: true,
+          filename: true,
         },
         orderBy: {
           updatedAt: 'desc',

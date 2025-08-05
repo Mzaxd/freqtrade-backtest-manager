@@ -114,7 +114,7 @@ export default function BacktestDetailPage() {
         {backtest.status === 'FAILED' && backtest.logs && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">错误日志</h2>
-            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96">
+            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96 whitespace-pre-wrap break-all">
               {backtest.logs}
             </pre>
           </div>

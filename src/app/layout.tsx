@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ReactQueryProvider } from '@/components/providers/react-query-provider'
+import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,6 +20,7 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body className={inter.className}>
         <ReactQueryProvider>
+          <Toaster position="top-center" reverseOrder={false} />
           <div className="min-h-screen bg-gray-50">
             <nav className="bg-white shadow-sm border-b">
               <div className="container mx-auto px-4 py-4">

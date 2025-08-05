@@ -20,6 +20,7 @@ model Strategy {
 model Config {
   id            Int            @id @default(autoincrement())
   name          String
+  filename      String?        @unique
   description   String?
   data          Json
   createdAt     DateTime       @default(now())
