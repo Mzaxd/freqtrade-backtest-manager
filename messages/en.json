@@ -1,5 +1,23 @@
 {
   "Index": {
     "title": "Welcome"
+  },
+  "Layout": {
+    "dashboard": "Dashboard",
+    "backtest_history": "Backtest History",
+    "strategy_management": "Strategy Management",
+    "config_management": "Config Management"
+  },
+  "Dashboard": {
+    "title": "Dashboard",
+    "total_backtests": "Total Backtests",
+    "running": "Running",
+    "completed": "Completed",
+    "total_strategies": "Total Strategies",
+    "recent_backtests": "Recent Backtests",
+    "quick_actions": "Quick Actions",
+    "new_backtest": "New Backtest",
+    "manage_strategies": "Manage Strategies",
+    "manage_configs": "Manage Configs"
   }
 }

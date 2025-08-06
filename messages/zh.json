@@ -1,5 +1,23 @@
 {
   "Index": {
     "title": "欢迎"
+  },
+  "Layout": {
+    "dashboard": "仪表盘",
+    "backtest_history": "回测历史",
+    "strategy_management": "策略管理",
+    "config_management": "配置管理"
+  },
+  "Dashboard": {
+    "title": "仪表盘",
+    "total_backtests": "总回测数",
+    "running": "运行中",
+    "completed": "已完成",
+    "total_strategies": "策略数",
+    "recent_backtests": "最近回测",
+    "quick_actions": "快速操作",
+    "new_backtest": "新建回测",
+    "manage_strategies": "管理策略",
+    "manage_configs": "管理配置"
   }
 }

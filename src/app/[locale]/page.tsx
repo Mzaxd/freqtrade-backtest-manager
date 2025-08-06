@@ -1,6 +1,11 @@
-import {useTranslations} from 'next-intl';
+import {unstable_setRequestLocale} from 'next-intl/server';
+import {redirect} from '@/navigation';
  
-export default function Index() {
-  const t = useTranslations('Index');
-  return <h1>{t('title')}</h1>;
+type Props = {
+  params: {locale: string};
+};
+ 
+export default function RootPage({params}: Props) {
+  unstable_setRequestLocale(params.locale);
+  redirect('/dashboard');
 }
