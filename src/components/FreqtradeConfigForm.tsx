@@ -283,20 +283,10 @@ const NewConfigForm: React.FC = () => {
                         ))}
                     </div>
                     
-                    <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="low-priority">
-                            <AccordionTrigger>高级设置</AccordionTrigger>
-                            <AccordionContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                                    {lowPriorityFields.map(([key, param]) => (
-                                        <div key={key}>
-                                            {renderInput(key, param, form)}
-                                        </div>
-                                    ))}
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
+                    {/*
+                      高级设置已被隐藏，以简化UI。
+                      这些字段的值将通过Zod schema的默认值在表单提交时自动包含。
+                    */}
                 </form>
             </Form>
         </div>

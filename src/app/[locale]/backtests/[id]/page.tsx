@@ -1,7 +1,8 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 
 interface BacktestTask {
   id: string
@@ -32,11 +33,31 @@ async function getBacktest(id: string) {
 export default function BacktestDetailPage() {
   const params = useParams()
   const id = params.id as string
+  const queryClient = useQueryClient()
 
   const { data: backtest, isLoading, error } = useQuery({
     queryKey: ['backtest', id],
     queryFn: () => getBacktest(id),
+    refetchInterval: (query) => {
+      const data = query.state.data as BacktestTask | undefined
+      if (data?.status === 'RUNNING' || data?.status === 'PENDING') {
+        return 5000 // 5 seconds
+      }
+      return false // Stop refetching
+    },
   })
+
+  const retryMutation = useMutation({
+    mutationFn: () => fetch(`/api/backtests/${id}/retry`, { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['backtest', id] })
+      queryClient.invalidateQueries({ queryKey: ['backtests'] })
+    },
+  })
+
+  const handleRetry = () => {
+    retryMutation.mutate()
+  }
 
   if (isLoading) {
     return (
@@ -70,7 +91,7 @@ export default function BacktestDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">{backtest.name}</h1>
         <div className="flex items-center space-x-4">
@@ -90,7 +111,14 @@ export default function BacktestDetailPage() {
 
       <div className="grid gap-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">基本信息</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">基本信息</h2>
+            {backtest.status === 'FAILED' && (
+              <Button onClick={handleRetry} disabled={retryMutation.isPending}>
+                {retryMutation.isPending ? '正在重试...' : '重新运行'}
+              </Button>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-600">策略</p>

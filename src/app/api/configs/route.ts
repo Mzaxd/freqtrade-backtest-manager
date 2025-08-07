@@ -19,50 +19,68 @@ function generateSafeFilename(name: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, data } = body;
+    const { name, description, data: userData } = body;
 
-    if (
-      data.pairlists &&
-      Array.isArray(data.pairlists) &&
-      data.pairlists.some((p: any) => p.method === 'StaticPairList') &&
-      (!data.pair_whitelist ||
-        !Array.isArray(data.pair_whitelist) ||
-        data.pair_whitelist.length === 0)
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            'Validation failed: Using StaticPairList requires a non-empty pair_whitelist.',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!name || !data) {
+    if (!name || !userData) {
       return NextResponse.json(
         { error: 'Missing required fields: name and data are required' },
         { status: 400 }
       );
     }
 
+    // 1. 读取完整的配置参数定义
+    const paramsFilePath = path.join(process.cwd(), 'public', 'freqtrade-config-parameters.json');
+    const paramsFileContent = await fs.promises.readFile(paramsFilePath, 'utf-8');
+    const configParams = JSON.parse(paramsFileContent);
+
+    // 2. 构建包含所有默认值的配置对象
+    const defaultConfig: { [key: string]: any } = {};
+    for (const key in configParams) {
+      if (Object.prototype.hasOwnProperty.call(configParams, key)) {
+        defaultConfig[key] = configParams[key].default;
+      }
+    }
+
+    // 3. 合并用户提交的数据和默认配置
+    // 用户提交的数据会覆盖默认值
+    const finalData = { ...defaultConfig, ...userData };
+
+    // 4. 执行特定的验证和逻辑（如果需要）
+    if (
+      finalData.pairlists &&
+      Array.isArray(finalData.pairlists) &&
+      finalData.pairlists.some((p: any) => p.method === 'StaticPairList') &&
+      (!finalData.pair_whitelist ||
+        !Array.isArray(finalData.pair_whitelist) ||
+        finalData.pair_whitelist.length === 0)
+    ) {
+      return NextResponse.json(
+        {
+          error: 'Validation failed: Using StaticPairList requires a non-empty pair_whitelist.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // 5. 生成文件名并写入文件
     const filename = generateSafeFilename(name);
     const configsPath = getConfigsPath();
     await fs.promises.mkdir(configsPath, { recursive: true });
     const configFilePath = path.join(configsPath, filename);
+
+    // 强制删除旧的或冲突的 log_config 和 logfile 键
+    delete finalData.log_config;
+    delete finalData.logfile;
     
-    // 如果 log_config 为 null，则从数据中删除它
-    if (data.log_config === null) {
-      delete data.log_config;
-    }
+    fs.writeFileSync(configFilePath, JSON.stringify(finalData, null, 2));
 
-    fs.writeFileSync(configFilePath, JSON.stringify(data, null, 2));
-
+    // 6. 在数据库中创建记录
     const newConfig = await prisma.config.create({
       data: {
         name,
         filename,
         description,
-        data,
+        data: finalData,
       },
     });
 

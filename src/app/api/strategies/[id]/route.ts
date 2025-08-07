@@ -4,11 +4,16 @@ import { unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
+const getStrategiesPath = () => {
+  const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || join(process.cwd(), 'ft_user_data');
+  return join(userDataPath, 'strategies');
+};
+
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const strategyId = parseInt(params.id)
+  const strategyId = parseInt(context.params.id)
   if (isNaN(strategyId)) {
     return NextResponse.json({ error: '无效的策略 ID' }, { status: 400 })
   }
@@ -33,13 +38,18 @@ export async function DELETE(
     }
 
     // 删除策略文件
-    const filepath = join('strategies', strategy.filename)
+    const strategiesPath = getStrategiesPath();
+    const filepath = join(strategiesPath, strategy.filename);
     if (existsSync(filepath)) {
       try {
         await unlink(filepath)
       } catch (fileError) {
-        console.warn(`策略文件删除失败: ${filepath}`, fileError)
-        // 非致命错误，继续执行
+        console.error(`策略文件删除失败: ${filepath}`, fileError)
+        // 这是一个致命错误，应中止操作
+        return NextResponse.json(
+          { error: '删除策略文件时发生错误' },
+          { status: 500 }
+        )
       }
     }
 

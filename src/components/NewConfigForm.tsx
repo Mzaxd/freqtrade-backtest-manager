@@ -25,6 +25,7 @@ interface Param {
   description: string
   category: string
   allowed_values?: any[]
+  ui_visible?: boolean // 新增 ui_visible 字段
 }
 
 interface ConfigFile {
@@ -45,7 +46,7 @@ interface NewConfigFormProps {
 const formSchema = z.object({
     name: z.string().min(1, '配置名称不能为空'),
     description: z.string().optional(),
-    data: z.record(z.string(), z.any()), // 允许 data 是一个包含任意键值对的对象
+    data: z.object({}).passthrough(), // 允许 data 是一个包含任意键值对的对象
 });
 
 
@@ -108,9 +109,13 @@ const NewConfigForm: React.FC<NewConfigFormProps> = ({ initialData }) => {
 
   useEffect(() => {
     const fetchParams = async () => {
-      const res = await fetch('/freqtrade-config-parameters.json')
-      const data: ConfigFile = await res.json()
-      setParams(data)
+      try {
+        const res = await fetch('/freqtrade-config-parameters.json')
+        const data: ConfigFile = await res.json()
+        setParams(data)
+      } catch (error) {
+        console.error("Failed to fetch or parse params:", error);
+      }
     }
     fetchParams()
   }, [])
@@ -158,128 +163,145 @@ const NewConfigForm: React.FC<NewConfigFormProps> = ({ initialData }) => {
     )
   }
 
-  const groupedParams = Object.entries(params).reduce((acc, [key, value]) => {
-    const category = value.category || 'other'
-    if (!acc[category]) {
-      acc[category] = {}
-    }
-    acc[category][key] = value
-    return acc
-  }, {} as Record<string, ConfigFile>)
+  const groupedParams = Object.entries(params)
+    .filter(([, param]) => param.ui_visible === true) // 仅保留 ui_visible 为 true 的配置项
+    .reduce((acc, [key, value]) => {
+      const category = value.category || 'other'
+      if (!acc[category]) {
+        acc[category] = {}
+      }
+      acc[category][key] = value
+      return acc
+    }, {} as Record<string, ConfigFile>)
 
   const renderField = (name: string, param: Param) => {
     const fieldName = `data.${name}` as const;
-    const error = (errors.data as any)?.[name]?.message;
 
-    const fieldLabel = (
-        <Label htmlFor={fieldName} className="flex items-center">
-            {name}
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 ml-2 text-muted-foreground cursor-pointer" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p className="max-w-xs">{param.description}</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-        </Label>
+    const renderInput = (type: string) => (
+        <Controller
+            name={fieldName}
+            control={control}
+            render={({ field }) => (
+                <Input
+                    type={type}
+                    {...field}
+                    value={String(field.value ?? '')}
+                    onChange={(e) => {
+                        const value = type === 'number' ? parseFloat(e.target.value) : e.target.value;
+                        field.onChange(value);
+                    }}
+                    className="mt-1"
+                />
+            )}
+        />
     );
 
-    switch (param.type) {
-      case 'Boolean':
-        return (
-          <Controller
+    const renderSwitch = () => (
+        <Controller
             name={fieldName}
             control={control}
             render={({ field }) => (
-              <div className="flex items-center space-x-2 mt-2">
-                {fieldLabel}
-                <Switch
-                  checked={Boolean(field.value)}
-                  onCheckedChange={field.onChange}
-                />
-                {error && <p className="text-sm text-destructive">{error}</p>}
-              </div>
+                <div className="flex items-center h-10">
+                    <Switch
+                        checked={!!field.value}
+                        onCheckedChange={field.onChange}
+                    />
+                </div>
             )}
-          />
-        )
-      case 'Dict':
-      case 'List of Dicts':
-      case 'Object':
-        return (
-          <Controller
-            name={fieldName}
-            control={control}
-            render={({ field }) => {
-              const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-              
-              const combinedRef = (el: HTMLTextAreaElement) => {
-                  field.ref(el);
-                  (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
-              };
+        />
+    );
 
-              React.useLayoutEffect(() => {
-                  if (textareaRef.current) {
-                      textareaRef.current.style.height = '0px'; // Reset before calculating
-                      const scrollHeight = textareaRef.current.scrollHeight;
-                      textareaRef.current.style.height = scrollHeight + 'px';
-                  }
-              }, [field.value]);
+    const renderTextarea = () => (
+      <Controller
+        name={fieldName}
+        control={control}
+        render={({ field }) => {
+          const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
-              return (
-                  <div>
-                      {fieldLabel}
-                      <Textarea
-                          ref={combinedRef}
-                          name={field.name}
-                          onBlur={field.onBlur}
-                          value={typeof field.value === 'object' && field.value !== null ? JSON.stringify(field.value, null, 2) : String(field.value ?? '')}
-                          onChange={(e) => {
-                              try {
-                                  field.onChange(JSON.parse(e.target.value));
-                              } catch {
-                                  field.onChange(e.target.value);
-                              }
-                          }}
-                          className="mt-1 font-mono overflow-y-hidden resize-none"
-                          rows={1}
-                      />
-                      {error && <p className="text-sm text-destructive">{error}</p>}
-                  </div>
-              )
-            }}
-          />
-        )
-      default: // String, Integer, Float etc.
-        return (
-          <Controller
+          const combinedRef = (el: HTMLTextAreaElement) => {
+            field.ref(el);
+            textareaRef.current = el;
+          };
+
+          React.useLayoutEffect(() => {
+            if (textareaRef.current) {
+              textareaRef.current.style.height = 'auto';
+              textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+            }
+          }, [field.value]);
+
+          return (
+            <Textarea
+              {...field}
+              ref={combinedRef}
+              value={typeof field.value === 'object' ? JSON.stringify(field.value, null, 2) : String(field.value ?? '')}
+              onChange={(e) => {
+                try {
+                  const parsed = JSON.parse(e.target.value);
+                  field.onChange(parsed);
+                } catch (error) {
+                  field.onChange(e.target.value);
+                }
+              }}
+              className="mt-1 font-mono resize-none overflow-hidden"
+              rows={1}
+            />
+          );
+        }}
+      />
+    );
+
+    const renderSelect = (options: any[]) => (
+         <Controller
             name={fieldName}
             control={control}
             render={({ field }) => (
-              <div>
-                {fieldLabel}
-                <Input
-                  {...field}
-                  id={fieldName}
-                  type={param.type.includes('Integer') || param.type.includes('Float') ? 'number' : 'text'}
-                  value={field.value === null || field.value === undefined ? '' : String(field.value)}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const val = param.type.includes('Integer') || param.type.includes('Float')
-                                  ? (e.target.value === '' ? null : Number(e.target.value))
-                                  : e.target.value;
-                      field.onChange(val);
-                  }}
-                  className="mt-1"
-                />
-                {error && <p className="text-sm text-destructive">{error}</p>}
-              </div>
+                <select {...field} value={String(field.value ?? '')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    {options.map(option => <option key={option} value={option}>{option}</option>)}
+                </select>
             )}
-          />
-        )
+        />
+    )
+    
+    let fieldElement;
+    const normalizedType = param.type.toLowerCase();
+
+    if (param.allowed_values) {
+        fieldElement = renderSelect(param.allowed_values);
+    } else if (name === 'stake_amount') {
+        fieldElement = renderInput('text'); // 'stake_amount' 的特例处理
+    } else if (normalizedType.includes('string')) {
+        fieldElement = renderInput('text');
+    } else if (normalizedType.includes('boolean')) {
+        fieldElement = renderSwitch();
+    } else if (normalizedType.includes('integer') || normalizedType.includes('float') || normalizedType.includes('positive float')) {
+        fieldElement = renderInput('number');
+    } else if (normalizedType.includes('dict') || normalizedType.includes('object') || normalizedType.includes('list')) {
+        fieldElement = renderTextarea();
+    } else {
+        fieldElement = renderInput('text');
     }
-  }
+
+    return (
+        <div key={name} className="space-y-2">
+            <div className="flex items-center">
+                <Label htmlFor={name} className="capitalize">{name.replace(/_/g, ' ')}</Label>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 ml-2 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="max-w-xs">{param.description}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
+            {fieldElement}
+            {errors.data?.[name] && <p className="text-sm text-destructive">{String(errors.data[name].message)}</p>}
+        </div>
+    );
+};
 
 
   return (
@@ -314,22 +336,24 @@ const NewConfigForm: React.FC<NewConfigFormProps> = ({ initialData }) => {
       
       {viewMode === 'form' ? (
         <Accordion type="multiple" defaultValue={['main']} className="w-full">
-          {Object.entries(groupedParams).map(([category, params]) => (
-            <AccordionItem value={category} key={category}>
-              <AccordionTrigger className="capitalize text-lg font-medium hover:no-underline">
-                   <div className="flex items-center">
-                      {category === 'main' && <Star className="h-5 w-5 mr-3 text-yellow-500 fill-yellow-400" />}
-                      {categoryTranslations[category] || category.replace(/_/g, ' ')}
-                   </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 p-4">
-                  {Object.entries(params).map(([name, param]) => (
-                    <div key={name}>{renderField(name, param)}</div>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+          {Object.entries(groupedParams)
+            .map(([category, params]) => (
+              <AccordionItem value={category} key={category}>
+                <AccordionTrigger className="capitalize text-lg font-medium hover:no-underline">
+                    <div className="flex items-center">
+                        {category === 'main' && <Star className="h-5 w-5 mr-3 text-yellow-500 fill-yellow-400" />}
+                        {categoryTranslations[category] || category.replace(/_/g, ' ')}
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 p-4">
+                    {Object.entries(params)
+                      .map(([name, param]) => (
+                        <div key={name}>{renderField(name, param)}</div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
           ))}
         </Accordion>
       ) : (

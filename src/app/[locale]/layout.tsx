@@ -7,6 +7,8 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, unstable_setRequestLocale } from 'next-intl/server'
 import { Navigation } from '@/components/Navigation'
+import { ThemeProvider } from '@/components/providers/theme-provider'
+import { ThemeSwitcher } from '@/components/ThemeSwitcher'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -31,22 +33,32 @@ export default async function RootLayout({children, params}: Props) {
   return (
     <html lang={locale}>
       <body className={inter.className}>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <ReactQueryProvider>
-            <Toaster position="top-center" reverseOrder={false} />
-            <div className="min-h-screen bg-gray-50">
-              <nav className="bg-white shadow-sm border-b">
-                <div className="container mx-auto px-4 py-4">
-                  <div className="flex items-center justify-between">
-                    <Navigation />
-                    <LanguageSwitcher />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <ReactQueryProvider>
+              <Toaster position="top-center" reverseOrder={false} />
+              <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                <nav className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
+                  <div className="container mx-auto px-4 py-4">
+                    <div className="flex items-center justify-between">
+                      <Navigation />
+                      <div className="flex items-center gap-4">
+                        <ThemeSwitcher />
+                        <LanguageSwitcher />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </nav>
-              <main>{children}</main>
-            </div>
-          </ReactQueryProvider>
-        </NextIntlClientProvider>
+                </nav>
+                <main>{children}</main>
+              </div>
+            </ReactQueryProvider>
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

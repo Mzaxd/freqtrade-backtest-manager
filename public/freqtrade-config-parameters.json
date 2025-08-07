@@ -3,384 +3,486 @@
     "type": "String",
     "default": "freqtrade",
     "description": "机器人的名称。通过API传递给客户端，可以用来区分/命名机器人。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": true
   },
   "max_open_trades": {
     "type": "Positive integer or -1",
     "default": -1,
     "description": "机器人允许的最大开仓数量。每个交易对只能有一个开仓，所以交易对列表的长度是另一个可能适用的限制。如果为-1则忽略（即潜在的无限开仓，受交易对列表限制）。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": true
   },
   "stake_currency": {
     "type": "String",
     "default": "USDT",
     "description": "用于交易的加密货币。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": true
   },
   "stake_amount": {
     "type": "Positive float or \"unlimited\"",
     "default": "unlimited",
     "description": "机器人将用于每笔交易的加密货币数量。设置为\"unlimited\"以允许机器人使用所有可用余额。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": true
   },
   "tradable_balance_ratio": {
     "type": "Positive float between 0.1 and 1.0",
     "default": 0.99,
     "description": "机器人允许交易的总账户余额的比例。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "available_capital": {
     "type": "Positive float",
     "default": 0.0,
     "description": "机器人的可用起始资本。在同一个交易所账户上运行多个机器人时很有用。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "amend_last_stake_amount": {
     "type": "Boolean",
     "default": false,
     "description": "在必要时使用减少的最后押注金额。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "last_stake_amount_min_ratio": {
     "type": "Float (as ratio)",
     "default": 0.5,
     "description": "定义必须留下并执行的最低押注金额比例。仅在最后押注金额被修改为减少值时适用（即如果amend_last_stake_amount设置为true）。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "amount_reserve_percent": {
     "type": "Positive Float as ratio",
     "default": 0.05,
     "description": "在最小交易对押注金额中保留一些金额。机器人在计算最小交易对押注金额时会保留amount_reserve_percent + 止损值，以避免可能的交易拒绝。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "timeframe": {
     "type": "String",
     "default": "5m",
     "allowed_values": ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "2w", "1M"],
     "description": "要使用的时间框架（例如1m, 5m, 15m, 30m, 1h ...）。通常在配置中缺失，在策略中指定。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": true
   },
   "fiat_display_currency": {
     "type": "String",
     "default": "USD",
     "description": "用于显示利润的法定货币。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": true
   },
   "dry_run": {
     "type": "Boolean",
     "default": true,
     "description": "定义机器人是否必须在模拟运行或生产模式下运行。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "dry_run_wallet": {
     "type": "Float or Dict",
     "default": 1000.0,
     "description": "定义在模拟运行模式下机器人使用的起始金额（以押注货币计）。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": true
   },
   "cancel_open_orders_on_exit": {
     "type": "Boolean",
     "default": false,
     "description": "当发出/stop RPC命令、按下Ctrl+C或机器人意外死亡时取消未完成的订单。当设置为true时，这允许您使用/stop在市场崩溃的情况下取消未完成和部分完成的订单。它不影响开仓头寸。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "process_only_new_candles": {
     "type": "Boolean",
     "default": true,
     "description": "仅在新蜡烛到达时启用指标处理。如果为false，每次循环都会填充指标，这将意味着多次处理同一根蜡烛，创建系统负载，但如果您的策略依赖于不仅仅是蜡烛的tick数据，则可能有用。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": true
   },
   "minimal_roi": {
     "type": "Dict",
     "default": {"0": 0.1},
     "description": "设置机器人将用于退出交易的阈值比例。",
-    "category": "risk_management"
+    "category": "risk_management",
+    "ui_visible": true
   },
   "stoploss": {
     "type": "Float (as ratio)",
     "default": -0.1,
     "description": "机器人使用的止损比例值。",
-    "category": "risk_management"
+    "category": "risk_management",
+    "ui_visible": true
   },
   "trailing_stop": {
     "type": "Boolean",
     "default": false,
     "description": "启用追踪止损（基于配置或策略文件中的止损）。",
-    "category": "risk_management"
+    "category": "risk_management",
+    "ui_visible": true
   },
   "trailing_stop_positive": {
     "type": "Float",
     "default": 0.01,
     "description": "一旦达到利润就改变止损。",
-    "category": "risk_management"
+    "category": "risk_management",
+    "ui_visible": true
   },
   "trailing_stop_positive_offset": {
     "type": "Float",
     "default": 0.0,
     "description": "应用trailing_stop_positive的偏移量。百分比值应为正值。",
-    "category": "risk_management"
+    "category": "risk_management",
+    "ui_visible": true
   },
   "trailing_only_offset_is_reached": {
     "type": "Boolean",
     "default": false,
     "description": "仅在达到偏移量时应用追踪止损。",
-    "category": "risk_management"
+    "category": "risk_management",
+    "ui_visible": true
   },
   "fee": {
     "type": "Float (as ratio)",
     "default": 0.001,
     "description": "回测/模拟运行期间使用的费用。通常不应配置，这会使freqtrade回落到交易所默认费用。设置为比率（例如0.001 = 0.1%）。每笔交易应用两次费用，一次买入，一次卖出。",
-    "category": "exchange"
+    "category": "exchange",
+    "ui_visible": true
   },
   "futures_funding_rate": {
     "type": "Float",
     "default": null,
     "description": "当交易所的历史资金费率不可用时使用的用户指定资金费率。这不会覆盖真实的历史费率。建议仅在测试特定币种且了解资金费率如何影响freqtrade的利润计算时设置为0。",
-    "category": "exchange"
+    "category": "exchange",
+    "ui_visible": false
   },
   "trading_mode": {
     "type": "String",
     "default": "spot",
     "allowed_values": ["spot", "futures", "margin"],
     "description": "指定您是想定期交易、使用杠杆交易还是交易衍生品。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": true
   },
   "margin_mode": {
     "type": "String",
     "default": "isolated",
     "allowed_values": ["isolated", "cross"],
     "description": "使用杠杆交易时，这决定了交易者拥有的抵押品是共享还是隔离到每个交易对。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": true
   },
   "liquidation_buffer": {
     "type": "Float",
     "default": 0.05,
     "description": "指定在清算价格和止损之间放置多大的安全网，以防止头寸达到清算价格的比例。",
-    "category": "risk_management"
+    "category": "risk_management",
+    "ui_visible": true
   },
   "unfilledtimeout": {
     "type": "Object",
     "default": {"entry": 10, "exit": 10, "unit": "minutes", "exit_timeout_count": 0},
     "description": "机器人等待未完成订单完成的时间。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": false
   },
   "entry_pricing": {
     "type": "Object",
     "default": {"price_side": "same", "use_order_book": true, "order_book_top": 1, "price_last_balance": 0.0, "check_depth_of_market": {"enabled": false, "bids_to_ask_delta": 0}},
     "description": "选择机器人应查看价差的哪一侧以获得入场率。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": false
   },
   "exit_pricing": {
     "type": "Object",
     "default": {"price_side": "same"},
     "description": "选择机器人应查看价差的哪一侧以获得出场率。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": false
   },
   "exchange": {
     "type": "Object",
     "default": {"name": "binance", "key": "", "secret": "", "ccxt_config": {}, "ccxt_async_config": {}},
     "description": "交易所配置。",
-    "category": "exchange"
+    "category": "exchange",
+    "ui_visible": true
   },
   "pairlists": {
     "type": "List of Dicts",
     "default": [{"method": "StaticPairList"}],
     "description": "定义要使用的交易对列表处理器。",
-    "category": "pairlist"
+    "category": "pairlist",
+    "ui_visible": true
+  },
+  "pair_whitelist": {
+    "type": "List",
+    "default": [],
+    "description": "使用 StaticPairList 时要交易的交易对列表。例如：[\"BTC/USDT\", \"ETH/USDT\"]",
+    "category": "pairlist",
+    "ui_visible": true
   },
   "edge": {
     "type": "Object",
     "default": {"enabled": false, "process_throttle_secs": 3600, "calculate_since_number_of_days": 7, "allowed_risk": 0.01, "stoploss_range_min": -0.01, "stoploss_range_max": -0.1, "stoploss_range_step": -0.01, "minimum_winrate": 0.6, "minimum_expectancy": 0.2, "min_trade_number": 10, "max_trade_duration_minute": 1440, "remove_pumps": false},
     "description": "边缘配置。",
-    "category": "edge"
+    "category": "edge",
+    "ui_visible": false
   },
   "api_server": {
     "type": "Object",
     "default": {"enabled": false, "listen_ip_address": "127.0.0.1", "listen_port": 8080, "verbosity": "info", "username": "", "password": "", "jwt_secret_key": "", "CORS_origins": []},
     "description": "API服务器配置。",
-    "category": "api_server"
+    "category": "api_server",
+    "ui_visible": false
   },
   "telegram": {
     "type": "Object",
     "default": {"enabled": false, "token": "", "chat_id": "", "notification_settings": {}},
     "description": "电报配置。",
-    "category": "notifications"
+    "category": "notifications",
+    "ui_visible": false
   },
   "webhook": {
     "type": "Object",
     "default": {"enabled": false, "url": "", "allow_custom_messages": false, "webhook_entry": {"enabled": false, "url": ""}, "webhook_exit": {"enabled": false, "url": ""}, "webhook_entry_cancel": {"enabled": false, "url": ""}, "webhook_exit_cancel": {"enabled": false, "url": ""}, "webhook_entry_fill": {"enabled": false, "url": ""}, "webhook_exit_fill": {"enabled": false, "url": ""}},
     "description": "Webhook配置。",
-    "category": "notifications"
+    "category": "notifications",
+    "ui_visible": false
   },
   "db_url": {
     "type": "String, SQLAlchemy connect string",
     "default": "sqlite:///tradesv3.dryrun.sqlite",
     "description": "声明要使用的数据库URL。注意：如果`dry_run`为`true`，则默认为`sqlite:///tradesv3.dryrun.sqlite`，对于生产实例，默认为`sqlite:///tradesv3.sqlite`。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "initial_state": {
     "type": "Enum",
     "default": "stopped",
     "allowed_values": ["running", "paused", "stopped"],
     "description": "定义初始应用程序状态。如果设置为stopped，则必须通过`/start` RPC命令显式启动机器人。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "force_entry_enable": {
     "type": "Boolean",
     "default": false,
     "description": "启用通过RPC命令强制交易入场的功能。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": false
   },
   "strategy": {
     "type": "ClassName",
     "default": "SampleStrategy",
     "description": "定义要使用的策略类。建议通过`--strategy NAME`设置。",
-    "category": "strategy"
+    "category": "strategy",
+    "ui_visible": true
   },
   "strategy_path": {
     "type": "String",
     "default": "user_data/strategies",
     "description": "添加额外的策略查找路径（必须是目录）。",
-    "category": "strategy"
+    "category": "strategy",
+    "ui_visible": false
   },
   "recursive_strategy_search": {
     "type": "Boolean",
     "default": false,
     "description": "设置为`true`以在`user_data/strategies`内的子目录中递归搜索策略。",
-    "category": "strategy"
+    "category": "strategy",
+    "ui_visible": false
   },
   "disable_dataframe_checks": {
     "type": "Boolean",
     "default": false,
     "description": "禁用从策略方法返回的OHLCV数据框的正确性检查。只有在故意更改数据框并了解其作用时才使用。",
-    "category": "data"
+    "category": "data",
+    "ui_visible": false
   },
   "dataformat_ohlcv": {
     "type": "String",
     "default": "feather",
     "allowed_values": ["feather", "json", "jsongz", "hdf5"],
     "description": "用于存储历史蜡烛（OHLCV）数据的数据格式。",
-    "category": "data"
+    "category": "data",
+    "ui_visible": false
   },
   "dataformat_trades": {
     "type": "String",
     "default": "feather",
     "allowed_values": ["feather", "json", "jsongz", "hdf5"],
     "description": "用于存储历史交易数据的数据格式。",
-    "category": "data"
+    "category": "data",
+    "ui_visible": false
   },
   "reduce_df_footprint": {
     "type": "Boolean",
     "default": false,
     "description": "将所有数字列重新转换为float32/int32，目的是减少ram/磁盘使用量（并减少回测/超参数优化和FreqAI中的训练/推理时间）。",
-    "category": "data"
+    "category": "data",
+    "ui_visible": false
   },
   "logfile": {
     "type": "String",
     "default": "logs/freqtrade.log",
     "description": "指定日志文件名。对10个文件使用滚动策略，每个文件的限制为1MB。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "add_config_files": {
     "type": "List of strings",
     "default": [],
     "description": "额外的配置文件。这些文件将被加载并与当前配置文件合并。文件相对于初始文件解析。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "log_config": {
     "type": "dict",
-    "default": null,
+    "default": {
+      "version": 1,
+      "disable_existing_loggers": false,
+      "formatters": {
+        "default": {
+          "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        }
+      },
+      "handlers": {
+        "console": {
+          "class": "logging.StreamHandler",
+          "formatter": "default",
+          "level": "INFO",
+          "stream": "ext://sys.stdout"
+        }
+      },
+      "root": {
+        "level": "INFO",
+        "handlers": [
+          "console"
+        ]
+      }
+    },
     "description": "包含python日志记录的日志配置字典。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "user_data_dir": {
     "type": "String",
     "default": "./user_data/",
     "description": "包含用户数据的目录。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "external_message_consumer": {
     "type": "Dict",
     "default": {"enabled": false, "producers": [], "wait_for_produtc": 0},
     "description": "启用生产者/消费者模式。",
-    "category": "main"
+    "category": "main",
+    "ui_visible": false
   },
   "experimental": {
     "type": "Object",
     "default": {"block_bad_exchanges": true},
     "description": "实验性配置。",
-    "category": "experimental"
+    "category": "experimental",
+    "ui_visible": false
   },
   "freqai": {
     "type": "Object",
-    "default": {"enabled": false, "train_period_days": 0, "backtest_period_days": 0, "identifier": "", "feature_parameters": {}, "data_split_parameters": {}},
+    "default": {
+      "enabled": false,
+      "train_period_days": 0,
+      "backtest_period_days": 0,
+      "identifier": "",
+      "feature_parameters": {
+        "include_corr_pairlist": [],
+        "include_timeframes": []
+      },
+      "data_split_parameters": {}
+    },
     "description": "FreqAI配置。",
-    "category": "freqai"
+    "category": "freqai",
+    "ui_visible": false
   },
   "order_types": {
     "type": "Object",
     "default": {"entry": "limit", "exit": "limit", "emergency_exit": "market", "force_entry": "market", "force_exit": "market", "stoploss": "market", "stoploss_on_exchange": false, "stoploss_on_exchange_interval": 60, "stoploss_on_exchange_limit_ratio": 0.99},
     "description": "配置取决于操作的订单类型（\"entry\", \"exit\", \"stoploss\", \"stoploss_on_exchange\"）。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": false
   },
     "use_exit_signal": {
     "type": "Boolean",
     "default": true,
     "description": "使用策略产生的退出信号，除了`minimal_roi`。将此设置为false会禁用\"exit_long\"和\"exit_short\"列的使用。对其他退出方法（止损、ROI、回调）没有影响。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": true
   },
   "exit_profit_only": {
     "type": "Boolean",
     "default": false,
     "description": "等待机器人达到exit_profit_offset后再做退出决定。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": true
   },
   "exit_profit_offset": {
     "type": "Float (as ratio)",
     "default": 0.0,
     "description": "退出信号仅在高于此值时有效。仅在与exit_profit_only=True结合时有效。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": true
   },
   "ignore_roi_if_entry_signal": {
     "type": "Boolean",
     "default": false,
     "description": "如果入场信号仍然活跃，则不退出。此设置优先于minimal_roi和use_exit_signal。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": true
   },
   "ignore_buying_expired_candle_after": {
     "type": "Integer",
     "default": 0,
     "description": "指定买信号不再使用的秒数。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": false
   },
   "position_adjustment_enable": {
     "type": "Boolean",
     "default": false,
     "description": "启用策略使用头寸调整（额外的买入或卖出）。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": true
   },
   "max_entry_position_adjustment": {
     "type": "Positive Integer or -1",
     "default": -1,
     "description": "每个开仓交易在第一个入场订单之上的最大额外订单数。设置为-1表示无限额外订单。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": true
   },
   "order_time_in_force": {
     "type": "Object",
     "default": {"entry": "GTC", "exit": "GTC"},
     "description": "配置入场和出场订单的时间限制。",
-    "category": "trading_behavior"
+    "category": "trading_behavior",
+    "ui_visible": false
   },
   "CORS_origins": {
     "type": "List of Strings",
     "default": [],
     "description": "允许访问机器人API的来源列表。这对于跨源请求至关重要，尤其是在使用FreqUI时。配置需要一个允许的URL列表，并且不允许使用尾部斜杠。",
-    "category": "api_server"
+    "category": "api_server",
+    "ui_visible": false
   },
   "jwt_secret_key": {
     "type": "String",
     "default": "",
     "description": "用于JWT令牌签名的密钥。",
-    "category": "api_server"
+    "category": "api_server",
+    "ui_visible": false
   }
 }

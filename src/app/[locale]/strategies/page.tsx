@@ -22,7 +22,8 @@ import {
 async function getStrategies() {
   const response = await fetch('/api/strategies')
   if (!response.ok) throw new Error('获取策略列表失败')
-  return response.json()
+  const result = await response.json()
+  return result.data ?? []
 }
 
 async function deleteStrategy(id: number): Promise<any> {

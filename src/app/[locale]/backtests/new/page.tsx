@@ -30,7 +30,7 @@ async function getStrategies() {
     throw new Error(error.error || 'Failed to fetch strategies')
   }
   const data = await response.json()
-  return Array.isArray(data) ? data : data.data || []
+  return data.data || data || []
 }
 
 async function getConfigs() {
