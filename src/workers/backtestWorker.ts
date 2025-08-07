@@ -40,7 +40,7 @@ export async function processBacktest(taskId: string) {
       '--config', path.posix.join(containerUserDataPath, 'configs', task.config?.filename || ''),
       '--strategy', task.strategy.className,
       '--strategy-path', path.posix.join(containerUserDataPath, 'strategies'),
-      '--timerange', `${task.timerangeStart?.toISOString().split('T')[0]}-${task.timerangeEnd?.toISOString().split('T')[0]}`,
+      '--timerange', `${task.timerangeStart?.toISOString().split('T')[0].replace(/-/g, '')}-${task.timerangeEnd?.toISOString().split('T')[0].replace(/-/g, '')}`,
       '--export', 'trades',
       '--export-filename', path.posix.join(containerUserDataPath, 'data', `backtest_${taskId}.json`),
     ]
