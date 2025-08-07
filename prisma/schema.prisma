@@ -46,3 +46,33 @@ model BacktestTask {
   config         Config?   @relation(fields: [configId], references: [id])
   strategy       Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
 }
+
+model MarketData {
+  id         Int      @id @default(autoincrement())
+  exchange   String
+  pair       String
+  timeframe  String
+  startTime  DateTime?
+  endTime    DateTime?
+  marketType String   @default("spot")
+  status     String   @default("available") // available, downloading, failed
+  filePath   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([exchange, pair, timeframe, marketType])
+}
+
+model DataDownloadJob {
+  id         String   @id @default(cuid())
+  exchange   String
+  pairs      String[]
+  timeframes String[]
+  marketType     String    @default("spot")
+  timerangeStart DateTime?
+  timerangeEnd   DateTime?
+  status         String    // pending, running, completed, failed
+  logs           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}

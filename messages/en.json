@@ -6,7 +6,8 @@
     "dashboard": "Dashboard",
     "backtest_history": "Backtest History",
     "strategy_management": "Strategy Management",
-    "config_management": "Config Management"
+    "config_management": "Config Management",
+    "data_management": "Data Management"
   },
   "Dashboard": {
     "title": "Dashboard",
@@ -19,5 +20,40 @@
     "new_backtest": "New Backtest",
     "manage_strategies": "Manage Strategies",
     "manage_configs": "Manage Configs"
+  },
+  "DataManagement": {
+    "title": "Data Management",
+    "downloadNewData": "Download New Data",
+    "exchange": "Exchange",
+    "selectExchange": "Select an exchange",
+    "startDateOptional": "Start Date (Optional)",
+    "endDateOptional": "End Date (Optional)",
+    "pairs": "Pairs (comma-separated)",
+    "pairsPlaceholder": "e.g., BTC/USDT,ETH/USDT",
+    "timeframes": "Timeframes",
+    "downloadData": "Download Data",
+    "availableMarketData": "Available Market Data",
+    "pair": "Pair",
+    "timeframe": "Timeframe",
+    "status": "Status",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "lastUpdated": "Last Updated",
+    "actions": "Actions",
+    "searchPlaceholder": "Search by pair...",
+    "loading": "Loading...",
+    "delete": "Delete",
+    "confirmDeletion": "Confirm Deletion",
+    "deleteConfirmationMessage": "This action cannot be undone. This will permanently delete the market data.",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "startingJob": "Starting Job...",
+    "jobStarted": "Data download job started!",
+    "jobFailed": "Failed to start download job",
+    "deleteSuccess": "Data deleted successfully.",
+    "deleteFailed": "Failed to delete data.",
+    "fetchFailed": "Failed to fetch market data",
+    "pairsRequired": "Pairs are required",
+    "timeframeRequired": "At least one timeframe is required"
   }
 }

@@ -6,7 +6,8 @@
     "dashboard": "仪表盘",
     "backtest_history": "回测历史",
     "strategy_management": "策略管理",
-    "config_management": "配置管理"
+    "config_management": "配置管理",
+    "data_management": "数据管理"
   },
   "Dashboard": {
     "title": "仪表盘",
@@ -19,5 +20,40 @@
     "new_backtest": "新建回测",
     "manage_strategies": "管理策略",
     "manage_configs": "管理配置"
+  },
+  "DataManagement": {
+    "title": "数据管理",
+    "downloadNewData": "下载新数据",
+    "exchange": "交易所",
+    "selectExchange": "选择一个交易所",
+    "startDateOptional": "开始日期 (可选)",
+    "endDateOptional": "结束日期 (可选)",
+    "pairs": "交易对 (逗号分隔)",
+    "pairsPlaceholder": "例如, BTC/USDT,ETH/USDT",
+    "timeframes": "时间周期",
+    "downloadData": "下载数据",
+    "availableMarketData": "可用市场数据",
+    "pair": "交易对",
+    "timeframe": "时间周期",
+    "status": "状态",
+    "startTime": "开始时间",
+    "endTime": "结束时间",
+    "lastUpdated": "最后更新",
+    "actions": "操作",
+    "searchPlaceholder": "按交易对搜索...",
+    "loading": "加载中...",
+    "delete": "删除",
+    "confirmDeletion": "确认删除",
+    "deleteConfirmationMessage": "此操作无法撤销。这将永久删除该市场数据。",
+    "confirm": "确认",
+    "cancel": "取消",
+    "startingJob": "正在启动任务...",
+    "jobStarted": "数据下载任务已开始！",
+    "jobFailed": "启动下载任务失败。",
+    "deleteSuccess": "数据删除成功。",
+    "deleteFailed": "删除数据失败。",
+    "fetchFailed": "获取市场数据失败。",
+    "pairsRequired": "必须填写交易对。",
+    "timeframeRequired": "请至少选择一个时间周期。"
   }
 }

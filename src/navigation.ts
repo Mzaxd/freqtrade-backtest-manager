@@ -9,6 +9,7 @@ export const pathnames = {
   '/backtests': '/backtests',
   '/strategies': '/strategies',
   '/configs': '/configs',
+  '/data': '/data',
 };
 
 export const {Link, redirect, usePathname, useRouter} =

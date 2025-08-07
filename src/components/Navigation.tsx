@@ -22,6 +22,9 @@ export function Navigation() {
         <Link href="/configs" className="text-gray-600 hover:text-gray-900">
           {t('config_management')}
         </Link>
+        <Link href="/data" className="text-gray-600 hover:text-gray-900">
+          {t('data_management')}
+        </Link>
       </div>
     </div>
   );

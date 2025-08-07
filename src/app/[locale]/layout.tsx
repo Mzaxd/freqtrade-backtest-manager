@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import '@/app/globals.css'
 import { ReactQueryProvider } from '@/components/providers/react-query-provider'
-import { Toaster } from 'react-hot-toast'
+import { Toaster } from 'sonner'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, unstable_setRequestLocale } from 'next-intl/server'
@@ -41,7 +41,7 @@ export default async function RootLayout({children, params}: Props) {
         >
           <NextIntlClientProvider locale={locale} messages={messages}>
             <ReactQueryProvider>
-              <Toaster position="top-center" reverseOrder={false} />
+              <Toaster />
               <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 <nav className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
                   <div className="container mx-auto px-4 py-4">

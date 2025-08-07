@@ -21,15 +21,12 @@ export const backtestQueue = new Queue('backtest', {
   connection,
 })
 
-export const createWorker = () => {
-  return new Worker('backtest', async (job) => {
-    const { taskId } = job.data
-    console.log(`Processing backtest task ${taskId}`)
-    
-    // Import the actual worker function
-    const { processBacktest } = await import('../workers/backtestWorker')
-    await processBacktest(taskId)
-  }, {
+export const dataDownloadQueue = new Queue('dataDownload', {
+  connection,
+})
+
+export const createWorker = (queueName: string, processor: (job: any) => Promise<void>) => {
+  return new Worker(queueName, processor, {
     connection,
   })
 }
