@@ -2,10 +2,24 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { dataDownloadQueue } from '@/lib/queue'
 
+export async function GET() {
+  try {
+    const jobs = await prisma.dataDownloadJob.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
+    return NextResponse.json(jobs)
+  } catch (error) {
+    console.error('Failed to fetch download jobs:', error)
+    return NextResponse.json({ error: 'Failed to fetch download jobs' }, { status: 500 })
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { exchange, pairs: pairsInput, timeframes, marketType, timerangeStart, timerangeEnd } = body
+    const { exchange, pairs: pairsInput, timeframes, marketType, timerangeStart, timerangeEnd, format } = body
 
     const pairs = typeof pairsInput === 'string'
       ? pairsInput.split(',').map(p => p.trim()).filter(p => p)
@@ -32,6 +46,7 @@ export async function POST(request: Request) {
         timerangeStart: timerangeStart ? new Date(timerangeStart) : null,
         timerangeEnd: timerangeEnd ? new Date(timerangeEnd) : null,
         status: 'PENDING',
+        format: format || 'feather',
       },
     })
 

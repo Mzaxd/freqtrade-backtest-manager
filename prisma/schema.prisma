@@ -18,16 +18,14 @@ model Strategy {
 }
 
 model Config {
-  id            Int            @id @default(autoincrement())
-  name          String
-  filename      String?        @unique
-  description   String?
-  data          Json
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  backtests     BacktestTask[]
-
-  @@unique([name])
+  id          Int            @id @default(autoincrement())
+  name        String         @unique
+  description String?
+  data        Json
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  filename    String?        @unique
+  backtests   BacktestTask[]
 }
 
 model BacktestTask {
@@ -48,31 +46,32 @@ model BacktestTask {
 }
 
 model MarketData {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   exchange   String
   pair       String
   timeframe  String
-  startTime  DateTime?
-  endTime    DateTime?
-  marketType String   @default("spot")
-  status     String   @default("available") // available, downloading, failed
+  marketType String    @default("spot")
+  status     String    @default("available")
   filePath   String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  endTime    DateTime?
+  startTime  DateTime?
 
   @@unique([exchange, pair, timeframe, marketType])
 }
 
 model DataDownloadJob {
-  id         String   @id @default(cuid())
-  exchange   String
-  pairs      String[]
-  timeframes String[]
+  id             String    @id @default(cuid())
+  exchange       String
+  pairs          String[]
+  timeframes     String[]
   marketType     String    @default("spot")
-  timerangeStart DateTime?
-  timerangeEnd   DateTime?
-  status         String    // pending, running, completed, failed
+  status         String
   logs           String?
+  format         String    @default("feather")
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  timerangeEnd   DateTime?
+  timerangeStart DateTime?
 }

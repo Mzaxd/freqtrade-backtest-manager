@@ -31,6 +31,8 @@
     "pairs": "Pairs (comma-separated)",
     "pairsPlaceholder": "e.g., BTC/USDT,ETH/USDT",
     "timeframes": "Timeframes",
+    "format": "Format",
+    "selectFormat": "Select a format",
     "downloadData": "Download Data",
     "availableMarketData": "Available Market Data",
     "pair": "Pair",
@@ -54,6 +56,9 @@
     "deleteFailed": "Failed to delete data.",
     "fetchFailed": "Failed to fetch market data",
     "pairsRequired": "Pairs are required",
-    "timeframeRequired": "At least one timeframe is required"
+    "timeframeRequired": "At least one timeframe is required",
+    "available": "Available",
+    "downloading": "Downloading",
+    "failed": "Failed"
   }
 }

@@ -31,6 +31,8 @@
     "pairs": "交易对 (逗号分隔)",
     "pairsPlaceholder": "例如, BTC/USDT,ETH/USDT",
     "timeframes": "时间周期",
+    "format": "格式",
+    "selectFormat": "选择一个格式",
     "downloadData": "下载数据",
     "availableMarketData": "可用市场数据",
     "pair": "交易对",
@@ -54,6 +56,9 @@
     "deleteFailed": "删除数据失败。",
     "fetchFailed": "获取市场数据失败。",
     "pairsRequired": "必须填写交易对。",
-    "timeframeRequired": "请至少选择一个时间周期。"
+    "timeframeRequired": "请至少选择一个时间周期。",
+    "available": "可用",
+    "downloading": "下载中",
+    "failed": "失败"
   }
 }

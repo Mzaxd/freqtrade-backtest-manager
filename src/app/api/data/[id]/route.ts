@@ -18,16 +18,12 @@ export async function DELETE(
     })
 
     if (marketData && marketData.filePath) {
-      const userDir = process.env.FREQTRADE_USER_DIR
-      if (userDir) {
-        const fullPath = path.join(userDir, marketData.filePath)
-        try {
-          await fs.unlink(fullPath)
-          console.log('Successfully deleted file:', fullPath)
-        } catch (fileError) {
-          console.error('Failed to delete file:', fileError)
-          // Decide if you want to stop or continue if file deletion fails
-        }
+      try {
+        await fs.unlink(marketData.filePath)
+        console.log('Successfully deleted file:', marketData.filePath)
+      } catch (fileError) {
+        console.error('Failed to delete file:', fileError)
+        // Decide if you want to stop or continue if file deletion fails
       }
     }
 

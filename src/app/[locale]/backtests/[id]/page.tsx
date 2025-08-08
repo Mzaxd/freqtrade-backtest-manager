@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import RealtimeLogViewer from '@/components/RealtimeLogViewer'
 
 interface BacktestTask {
   id: string
@@ -90,6 +91,8 @@ export default function BacktestDetailPage() {
     )
   }
 
+  const showLogs = backtest.status === 'RUNNING' || backtest.status === 'PENDING' || (backtest.status === 'FAILED' && backtest.logs)
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
@@ -139,12 +142,13 @@ export default function BacktestDetailPage() {
           </div>
         </div>
 
-        {backtest.status === 'FAILED' && backtest.logs && (
+        {showLogs && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">错误日志</h2>
-            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96 whitespace-pre-wrap break-all">
-              {backtest.logs}
-            </pre>
+            <h2 className="text-xl font-semibold mb-4">日志</h2>
+            <RealtimeLogViewer 
+              logSourceUrl={`/api/backtests/${id}/logs`}
+              initialLogs={backtest.logs}
+            />
           </div>
         )}
 

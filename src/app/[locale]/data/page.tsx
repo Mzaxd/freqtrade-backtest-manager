@@ -33,6 +33,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
+import RealtimeLogViewer from '@/components/RealtimeLogViewer'
 
 const timeframesOptions = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w'] as const;
 const exchanges = ['binance', 'okx', 'gateio', 'kucoin', 'bybit'] as const;
@@ -43,6 +44,7 @@ const downloadSchema = z.object({
   timeframes: z.array(z.enum(timeframesOptions)).min(1, 'At least one timeframe is required'),
   timerangeStart: z.string().optional(),
   timerangeEnd: z.string().optional(),
+  format: z.enum(['json', 'feather']),
 })
 
 type DownloadFormValues = z.infer<typeof downloadSchema>
@@ -59,10 +61,21 @@ export default function DataPage() {
   const queryClient = useQueryClient()
   const t = useTranslations('DataManagement');
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
 
-  const { data: marketData, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['marketData', searchTerm],
     queryFn: () => fetchMarketData(searchTerm),
+  })
+
+  const { data: jobs } = useQuery({
+    queryKey: ['downloadJobs'],
+    queryFn: async () => {
+      const res = await fetch('/api/data/download')
+      if (!res.ok) throw new Error('Failed to fetch jobs')
+      return res.json()
+    },
+    refetchInterval: 5000,
   })
 
   const form = useForm<DownloadFormValues>({
@@ -73,6 +86,7 @@ export default function DataPage() {
       timeframes: ['5m', '1h'],
       timerangeStart: '',
       timerangeEnd: '',
+      format: 'json',
     },
   })
 
@@ -91,6 +105,7 @@ export default function DataPage() {
     onSuccess: () => {
       toast.success(t('jobStarted'))
       queryClient.invalidateQueries({ queryKey: ['marketData'] })
+      queryClient.invalidateQueries({ queryKey: ['downloadJobs'] })
     },
     onError: (error) => {
       toast.error(error.message)
@@ -123,6 +138,17 @@ export default function DataPage() {
   const handleDelete = (id: number) => {
     deleteMutation.mutate(id)
   }
+  
+  const mergedData = data?.map((market: any) => {
+    const job = jobs?.find((j: any) => 
+      j.pairs.includes(market.pair) && 
+      j.timeframes.includes(market.timeframe) &&
+      j.exchange === market.exchange &&
+      // Check if the job is recent enough to be related
+      new Date(j.createdAt) > new Date(new Date().getTime() - 24 * 60 * 60 * 1000)
+    );
+    return { ...market, jobStatus: job?.status, jobId: job?.id, jobLogs: job?.logs };
+  }) || [];
 
   return (
     <div className="container mx-auto p-4">
@@ -244,6 +270,27 @@ export default function DataPage() {
               <Button type="submit" disabled={downloadMutation.isPending}>
                 {downloadMutation.isPending ? t('startingJob') : t('downloadData')}
               </Button>
+              <FormField
+                control={form.control}
+                name="format"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('format')}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('selectFormat')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="json">JSON</SelectItem>
+                        <SelectItem value="feather">Feather</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </form>
           </Form>
         </CardContent>
@@ -281,7 +328,7 @@ export default function DataPage() {
                   <TableCell colSpan={8} className="text-center">{t('loading')}</TableCell>
                 </TableRow>
               ) : (
-                marketData?.map((data: any) => (
+                mergedData.map((data: any) => (
                   <TableRow key={data.id}>
                     <TableCell>{data.exchange}</TableCell>
                     <TableCell>{data.pair}</TableCell>
@@ -291,33 +338,57 @@ export default function DataPage() {
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         data.status === 'available' ? 'bg-green-200 text-green-800' :
-                        data.status === 'downloading' ? 'bg-yellow-200 text-yellow-800' :
-                        'bg-red-200 text-red-800'
+                        data.jobStatus === 'RUNNING' ? 'bg-blue-200 text-blue-800' :
+                        data.jobStatus === 'FAILED' ? 'bg-red-200 text-red-800' :
+                        'bg-gray-200 text-gray-800'
                       }`}>
-                        {data.status}
+                        {t((data.jobStatus || data.status) as any)}
                       </span>
                     </TableCell>
                     <TableCell>{new Date(data.updatedAt).toLocaleString()}</TableCell>
                     <TableCell>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">{t('delete')}</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>{t('confirmDeletion')}</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {t('deleteConfirmationMessage')}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(data.id)}>
-                              {t('confirm')}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <div className="flex space-x-2">
+                        {data.jobId && (data.jobStatus === 'RUNNING' || data.jobStatus === 'FAILED') && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={() => setSelectedJobId(data.jobId)}>{t('viewLogs')}</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="max-w-4xl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>{t('logsFor')} {data.pair}</AlertDialogTitle>
+                              </AlertDialogHeader>
+                              {selectedJobId === data.jobId &&
+                                <RealtimeLogViewer
+                                  logSourceUrl={`/api/data/${selectedJobId}/logs`}
+                                  initialLogs={data.jobLogs}
+                                />
+                              }
+                              <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setSelectedJobId(null)}>{t('close')}</AlertDialogCancel>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">{t('delete')}</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t('confirmDeletion')}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t('deleteConfirmationMessage')}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(data.id)}>
+                                {t('confirm')}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
