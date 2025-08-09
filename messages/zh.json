@@ -59,6 +59,10 @@
     "timeframeRequired": "请至少选择一个时间周期。",
     "available": "可用",
     "downloading": "下载中",
-    "failed": "失败"
+    "failed": "失败",
+    "PENDING": "等待中",
+    "RUNNING": "运行中",
+    "COMPLETED": "已完成",
+    "FAILED": "失败"
   }
 }

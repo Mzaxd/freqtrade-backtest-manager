@@ -59,6 +59,10 @@
     "timeframeRequired": "At least one timeframe is required",
     "available": "Available",
     "downloading": "Downloading",
-    "failed": "Failed"
+    "failed": "Failed",
+    "PENDING": "Pending",
+    "RUNNING": "Running",
+    "COMPLETED": "Completed",
+    "FAILED": "Failed"
   }
 }

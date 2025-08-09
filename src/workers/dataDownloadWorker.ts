@@ -2,92 +2,26 @@ import { spawn } from 'child_process'
 import { prisma } from '@/lib/prisma'
 import Redis from 'ioredis'
 import path from 'path'
-import fs from 'fs/promises'
+// fs and util are no longer needed after removing scanAndSyncData
+// import fs from 'fs/promises'
+// import util from 'util'
+
+// const exec = util.promisify(require('child_process').exec)
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
-async function scanAndSyncData(exchange: string, marketType: string) {
-  const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || path.join(process.cwd(), 'ft_user_data');
-  const dataPath = path.join(userDataPath, 'data', exchange);
-
-  try {
-    const files = await fs.readdir(dataPath);
-    console.log(`Found ${files.length} files in ${dataPath}`);
-    
-    for (const file of files) {
-      if (file.endsWith('.json') && !file.endsWith('.meta.json')) {
-        const [pair, timeframe] = file.replace('.json', '').split('-');
-        const pairPath = pair.replace('_', '/');
-        const fullPath = path.join(dataPath, file);
-
-        let startTime: Date | undefined;
-        let endTime: Date | undefined;
-        let parseError: string | null = null;
-
-        try {
-          if (file.endsWith('.json')) {
-            console.log(`Processing JSON file: ${file}`);
-            const fileContent = await fs.readFile(fullPath, 'utf-8');
-            const data = JSON.parse(fileContent);
-            console.log(`JSON file ${file} data length: ${data.length}`);
-            console.log(`JSON file ${file} first data item:`, JSON.stringify(data[0]));
-            
-            if (data.length > 0) {
-              // 检查数据格式，可能是 [timestamp, ...] 或 { date: timestamp, ... }
-              if (Array.isArray(data[0])) {
-                startTime = new Date(data[0][0]);
-                endTime = new Date(data[data.length - 1][0]);
-              } else if (data[0].date !== undefined) {
-                startTime = new Date(data[0].date);
-                endTime = new Date(data[data.length - 1].date);
-              } else {
-                parseError = `Unknown JSON data format: ${Object.keys(data[0])}`;
-              }
-              console.log(`JSON file ${file}: start=${startTime}, end=${endTime}, parseError=${parseError}`);
-            } else {
-              parseError = 'JSON file is empty';
-            }
-          }
-        } catch (e) {
-          parseError = e instanceof Error ? e.message : String(e);
-          console.error(`Failed to parse time range from ${file}:`, parseError);
-        }
-        
-        console.log(`Upserting market data for ${exchange}, ${pairPath}, ${timeframe} with times:`, { startTime, endTime });
-        
-        await prisma.marketData.upsert({
-          where: {
-            exchange_pair_timeframe_marketType: {
-              exchange,
-              pair: pairPath,
-              timeframe,
-              marketType
-            }
-          },
-          update: {
-            status: 'available',
-            filePath: fullPath,
-            startTime,
-            endTime
-          },
-          create: {
-            exchange,
-            pair: pairPath,
-            timeframe,
-            marketType,
-            status: 'available',
-            filePath: fullPath,
-            startTime,
-            endTime
-          },
-        });
-        
-        console.log(`Successfully upserted market data for ${exchange}, ${pairPath}, ${timeframe}`);
-      }
-    }
-  } catch (error) {
-    console.error(`Failed to scan data for ${exchange}:`, error);
-  }
+// getFeatherTimerange is no longer needed
+/*
+async function getFeatherTimerange(filePath: string): Promise<{ start?: Date; end?: Date; error?: string }> {
+  // ... implementation ...
 }
+*/
+
+// scanAndSyncData is no longer needed and will be replaced by direct logic in processDataDownload
+/*
+async function scanAndSyncData(exchange: string, marketType: string) {
+  // ... implementation ...
+}
+*/
 
 export async function processDataDownload(jobId: string) {
   try {
@@ -106,7 +40,7 @@ export async function processDataDownload(jobId: string) {
 
     const logs: string[] = [];
     
-    const commandWithArgs = (process.env.FREQTRADE_PATH || 'freqtrade').split(' ')  
+    const commandWithArgs = (process.env.FREQTRADE_PATH || 'freqtrade').split(' ')
     const command = commandWithArgs[0]
     const baseArgs = commandWithArgs.slice(1)
 
@@ -120,10 +54,16 @@ export async function processDataDownload(jobId: string) {
       '--timeframes', ...job.timeframes,
     ]
 
+    // Always specify the data format for candles, using the specific ohlcv flag
+    args.push('--data-format-ohlcv', job.format || 'json');
+
+    /*
     if (job.format === 'json') {
+      // Also download trades if format is json, as feather doesn't support it well for our use case
       args.push('--dl-trades');
       args.push('--data-format-trades', 'json');
     }
+    */
 
     if (job.timerangeStart && job.timerangeEnd) {
       const format = (date: Date) => date.toISOString().split('T')[0].replace(/-/g, '');
@@ -165,8 +105,49 @@ export async function processDataDownload(jobId: string) {
           logs: fullLogs,
         },
       });
-      // Sync the downloaded data with the database
-      await scanAndSyncData(job.exchange, job.marketType);
+      
+      // New logic: Update MarketData based on job parameters instead of scanning fs
+      console.log(`Job ${jobId} completed. Updating MarketData based on job parameters.`);
+      const dataPath = path.join(userDataPath, 'data', job.exchange);
+
+      for (const pair of job.pairs) {
+        for (const timeframe of job.timeframes) {
+          const pairForPath = pair.replace('/', '_');
+          const fileName = `${pairForPath}-${timeframe}.${job.format || 'json'}`;
+          const fullPath = path.join(dataPath, fileName);
+
+          console.log(`Upserting market data for ${job.exchange}, ${pair}, ${timeframe}`);
+          
+          await prisma.marketData.upsert({
+            where: {
+              exchange_pair_timeframe_marketType: {
+                exchange: job.exchange,
+                pair: pair,
+                timeframe: timeframe,
+                marketType: job.marketType
+              }
+            },
+            update: {
+              status: 'available',
+              filePath: fullPath,
+              startTime: job.timerangeStart,
+              endTime: job.timerangeEnd,
+            },
+            create: {
+              exchange: job.exchange,
+              pair: pair,
+              timeframe: timeframe,
+              marketType: job.marketType,
+              status: 'available',
+              filePath: fullPath,
+              startTime: job.timerangeStart,
+              endTime: job.timerangeEnd,
+            },
+          });
+          console.log(`Successfully upserted market data for ${job.exchange}, ${pair}, ${timeframe}`);
+        }
+      }
+
     } else {
       await prisma.dataDownloadJob.update({
         where: { id: jobId },

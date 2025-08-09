@@ -342,7 +342,7 @@ export default function DataPage() {
                         data.jobStatus === 'FAILED' ? 'bg-red-200 text-red-800' :
                         'bg-gray-200 text-gray-800'
                       }`}>
-                        {t((data.jobStatus || data.status) as any)}
+                        {data.status === 'available' ? t('available') : t((data.jobStatus || 'PENDING') as any)}
                       </span>
                     </TableCell>
                     <TableCell>{new Date(data.updatedAt).toLocaleString()}</TableCell>
