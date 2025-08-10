@@ -44,6 +44,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 验证配置是否存在并包含 timeframe
+    const config = await prisma.config.findUnique({
+      where: { id: parseInt(configId, 10) },
+    });
+
+    if (!config) {
+      return NextResponse.json({ error: 'Configuration not found' }, { status: 404 });
+    }
+
+    const timeframe = (config.data as any)?.timeframe;
+    if (!timeframe) {
+      return NextResponse.json(
+        { error: 'Configuration is missing the required "timeframe" field.' },
+        { status: 400 }
+      );
+    }
+
     // 创建回测任务
     const backtest = await prisma.backtestTask.create({
       data: {
@@ -51,6 +68,7 @@ export async function POST(request: NextRequest) {
         status: 'PENDING',
         strategyId: parseInt(strategyId),
         configId: parseInt(configId),
+        timeframe,
         timerangeStart: timerangeStart ? new Date(timerangeStart) : null,
         timerangeEnd: timerangeEnd ? new Date(timerangeEnd) : null,
       },

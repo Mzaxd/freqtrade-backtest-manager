@@ -74,12 +74,20 @@ export async function POST(request: NextRequest) {
     console.log(`[KILO_CODE_DEBUG] Saving strategy file to: ${filepath}`);
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
 
-    // 从文件名提取类名（假设文件名格式为 'strategy_name.py'）
-    const className = filename.replace('.py', '').split('_').map(part => 
-      part.charAt(0).toUpperCase() + part.slice(1)
-    ).join('');
+    // 从文件内容中提取类名
+    const fileContent = buffer.toString('utf-8');
+    const match = fileContent.match(/class\s+([a-zA-Z0-9_]+)\s*\(/);
+
+    if (!match || !match[1]) {
+      return NextResponse.json(
+        { error: '无法从策略文件中解析出类名。', details: 'Could not parse the class name from the strategy file. Please ensure it follows the format "class YourStrategyName(IStrategy):".' },
+        { status: 400 }
+      );
+    }
+    const className = match[1];
+
+    await writeFile(filepath, buffer);
 
     // 保存到数据库
     const strategy = await prisma.strategy.create({

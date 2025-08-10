@@ -333,8 +333,8 @@ export default function DataPage() {
                     <TableCell>{data.exchange}</TableCell>
                     <TableCell>{data.pair}</TableCell>
                     <TableCell>{data.timeframe}</TableCell>
-                    <TableCell>{data.startTime ? new Date(data.startTime).toLocaleString() : 'N/A'}</TableCell>
-                    <TableCell>{data.endTime ? new Date(data.endTime).toLocaleString() : 'N/A'}</TableCell>
+                    <TableCell>{data.startTime ? new Date(data.startTime).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>{data.endTime ? new Date(data.endTime).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         data.status === 'available' ? 'bg-green-200 text-green-800' :
@@ -345,7 +345,7 @@ export default function DataPage() {
                         {data.status === 'available' ? t('available') : t((data.jobStatus || 'PENDING') as any)}
                       </span>
                     </TableCell>
-                    <TableCell>{new Date(data.updatedAt).toLocaleString()}</TableCell>
+                    <TableCell>{new Date(data.updatedAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         {data.jobId && (data.jobStatus === 'RUNNING' || data.jobStatus === 'FAILED') && (

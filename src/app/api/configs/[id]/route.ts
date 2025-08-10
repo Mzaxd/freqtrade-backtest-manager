@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { pinyin } from 'pinyin';
 
@@ -20,10 +20,40 @@ function generateSafeFilename(name: string): string {
   return `${pinyinName.replace(/[\s\W]/g, '_')}.json`;
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<Params> }) {
+const isObject = (item: any): item is object => {
+   return (item && typeof item === 'object' && !Array.isArray(item));
+};
+
+const deepMerge = <T extends object, U extends object>(target: T, source: U): T & U => {
+   const output = { ...target } as T & U;
+
+   if (isObject(target) && isObject(source)) {
+       Object.keys(source).forEach(key => {
+           const sourceKey = key as keyof U;
+           const sourceValue = source[sourceKey];
+           
+           if (key in target) {
+               const targetValue = target[key as keyof T];
+               if (isObject(sourceValue) && isObject(targetValue)) {
+                   (output as any)[key] = deepMerge(targetValue, sourceValue as object);
+               } else {
+                   (output as any)[key] = sourceValue;
+               }
+           } else {
+               (output as any)[key] = sourceValue;
+           }
+       });
+   }
+   return output;
+};
+
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
   try {
-    const { id } = await params;
-    const idNum = parseInt(id, 10);
+    const idNum = parseInt(params.id, 10);
     if (isNaN(idNum)) {
       return NextResponse.json({ error: '无效的 ID 格式' }, { status: 400 });
     }
@@ -53,74 +83,66 @@ export async function GET(request: NextRequest, { params }: { params: Promise<Pa
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<Params> }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
   try {
-    const { id } = await params;
-    const idNum = parseInt(id, 10);
+    const idNum = parseInt(params.id, 10);
     if (isNaN(idNum)) {
       return NextResponse.json({ error: '无效的 ID 格式' }, { status: 400 });
     }
-    
-    const body = await request.json();
-    const { name, description, data: userData } = body;
 
-    // 验证，确保至少有一个字段用于更新
-    if (!name && !description && !userData) {
+    const body = await request.json();
+    const { name, description, config: userData, filename } = body;
+
+    if (!name || !filename || !userData) {
       return NextResponse.json(
-        { error: '无字段可更新。提供名称、描述或数据。' },
+        { error: '缺少必填字段：需要 name、filename 和 config' },
+        { status: 400 },
+      );
+    }
+
+    const existingConfig = await prisma.config.findUnique({
+      where: { id: idNum },
+    });
+    if (!existingConfig) {
+      return NextResponse.json({ error: '配置未找到' }, { status: 404 });
+    }
+
+    const finalData = userData;
+
+    // 验证 timeframe 是否存在
+    if (!finalData.timeframe) {
+      return NextResponse.json(
+        { error: 'Field "timeframe" is required in the configuration.' },
         { status: 400 }
       );
     }
-    
-    // 检查配置是否存在
-    const existingConfig = await prisma.config.findUnique({ where: { id: idNum } });
-    if (!existingConfig) {
-        return NextResponse.json({ error: '配置未找到' }, { status: 404 });
-    }
-
-    // 1. 读取完整的配置参数定义
-    const paramsFilePath = path.join(process.cwd(), 'public', 'freqtrade-config-parameters.json');
-    const paramsFileContent = await fs.promises.readFile(paramsFilePath, 'utf-8');
-    const configParams = JSON.parse(paramsFileContent);
-
-    // 2. 构建包含所有默认值的配置对象
-    const defaultConfig: { [key: string]: any } = {};
-    for (const key in configParams) {
-      if (Object.prototype.hasOwnProperty.call(configParams, key)) {
-        defaultConfig[key] = configParams[key].default;
-      }
-    }
-
-    // 3. 合并数据：默认配置 -> 数据库中的现有配置 -> 用户提交的新数据
-    const finalData = { ...defaultConfig, ...(existingConfig.data as object), ...userData };
 
     const configsPath = getConfigsPath();
-    let newFilename = existingConfig.filename;
 
-    if (name && name !== existingConfig.name) {
-      newFilename = generateSafeFilename(name)
-      if (existingConfig.filename) {
-        const oldFilePath = path.join(configsPath, existingConfig.filename);
-        if (fs.existsSync(oldFilePath)) {
-          fs.unlinkSync(oldFilePath);
+    if (filename !== existingConfig.filename && existingConfig.filename) {
+      const oldFilePath = path.join(configsPath, existingConfig.filename);
+      try {
+        await fs.access(oldFilePath);
+        await fs.unlink(oldFilePath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          console.error('删除旧配置文件时出错:', error);
         }
       }
     }
-    
-    const configFilePath = path.join(configsPath, newFilename ?? generateSafeFilename(name));
-    
-    // 强制删除旧的或冲突的 log_config 和 logfile 键
-    delete finalData.log_config;
-    delete finalData.logfile;
 
-    fs.writeFileSync(configFilePath, JSON.stringify(finalData, null, 2));
+    const configFilePath = path.join(configsPath, filename);
+    await fs.writeFile(configFilePath, JSON.stringify(finalData, null, 2));
 
     const updatedConfig = await prisma.config.update({
       where: { id: idNum },
       data: {
-        name: name || existingConfig.name,
-        filename: newFilename,
-        description: description || existingConfig.description,
+        name: name,
+        filename: filename,
+        description: description,
         data: finalData,
       },
     });
@@ -133,12 +155,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<Pa
   } catch (error) {
     console.error('Error updating configuration: ', error);
     if (error instanceof Error && 'code' in error && error.code === 'P2002') {
-       return NextResponse.json(
+      return NextResponse.json(
         {
           error: '更新配置失败',
           details: '同名配置已存在',
         },
-        { status: 409 } // 409 Conflict
+        { status: 409 }, // 409 Conflict
       );
     }
     return NextResponse.json(
@@ -146,15 +168,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<Pa
         error: '更新配置失败',
         details: error instanceof Error ? error.message : '未知错误',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<Params> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
   try {
-    const { id } = await params;
-    const idNum = parseInt(id, 10);
+    const idNum = parseInt(params.id, 10);
     if (isNaN(idNum)) {
       return NextResponse.json({ error: '无效的 ID 格式' }, { status: 400 });
     }
@@ -183,8 +207,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (existingConfig.filename) {
       const configsPath = getConfigsPath();
       const configFilePath = path.join(configsPath, existingConfig.filename);
-      if (fs.existsSync(configFilePath)) {
-        fs.unlinkSync(configFilePath);
+      try {
+        await fs.access(configFilePath);
+        await fs.unlink(configFilePath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          console.error('删除配置文件时出错:', error);
+        }
       }
     }
 

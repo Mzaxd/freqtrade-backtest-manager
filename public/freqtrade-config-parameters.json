@@ -186,43 +186,98 @@
   },
   "unfilledtimeout": {
     "type": "Object",
-    "default": {"entry": 10, "exit": 10, "unit": "minutes", "exit_timeout_count": 0},
+    "default": { "buy": 10, "sell": 30, "unit": "minutes" },
     "description": "机器人等待未完成订单完成的时间。",
     "category": "trading_behavior",
     "ui_visible": false
   },
-  "entry_pricing": {
+  "bid_strategy": {
     "type": "Object",
-    "default": {"price_side": "same", "use_order_book": true, "order_book_top": 1, "price_last_balance": 0.0, "check_depth_of_market": {"enabled": false, "bids_to_ask_delta": 0}},
-    "description": "选择机器人应查看价差的哪一侧以获得入场率。",
+    "default": {
+      "price_side": "bid",
+      "ask_last_balance": 0.0,
+      "use_order_book": false,
+      "order_book_top": 1,
+      "check_depth_of_market": {
+        "enabled": false,
+        "bids_to_ask_delta": 1
+      }
+    },
+    "description": "定义出价（买入）策略。",
     "category": "trading_behavior",
     "ui_visible": false
   },
-  "exit_pricing": {
+  "ask_strategy": {
     "type": "Object",
-    "default": {"price_side": "same"},
-    "description": "选择机器人应查看价差的哪一侧以获得出场率。",
+    "default": {
+      "price_side": "ask",
+      "use_order_book": false,
+      "order_book_min": 1,
+      "order_book_max": 1,
+      "use_sell_signal": true,
+      "sell_profit_only": false,
+      "ignore_roi_if_buy_signal": false
+    },
+    "description": "定义要价（卖出）策略。",
     "category": "trading_behavior",
     "ui_visible": false
   },
   "exchange": {
     "type": "Object",
-    "default": {"name": "binance", "key": "", "secret": "", "ccxt_config": {}, "ccxt_async_config": {}},
+    "default": {
+      "name": "binance",
+      "key": "",
+      "secret": "",
+      "ccxt_config": {},
+      "ccxt_async_config": {},
+      "pair_whitelist": [],
+      "pair_blacklist": []
+    },
     "description": "交易所配置。",
     "category": "exchange",
-    "ui_visible": true
+    "ui_visible": true,
+    "properties": {
+      "name": {
+        "type": "String",
+        "default": "binance",
+        "description": "交易所名称。"
+      },
+      "key": {
+        "type": "String",
+        "default": "",
+        "description": "API密钥。"
+      },
+      "secret": {
+        "type": "String",
+        "default": "",
+        "description": "API私钥。"
+      },
+      "ccxt_config": {
+        "type": "Object",
+        "default": {},
+        "description": "CCXT配置。"
+      },
+      "ccxt_async_config": {
+        "type": "Object",
+        "default": {},
+        "description": "异步CCXT配置。"
+      },
+      "pair_whitelist": {
+        "type": "List",
+        "default": ["BTC/USDT"],
+        "description": "使用 StaticPairList 时要交易的交易对列表。例如：[\"BTC/USDT\", \"ETH/USDT\"]"
+      },
+      "pair_blacklist": {
+        "type": "List",
+        "default": [],
+        "description": "要从交易中排除的交易对列表。"
+      }
+    }
   },
   "pairlists": {
     "type": "List of Dicts",
     "default": [{"method": "StaticPairList"}],
     "description": "定义要使用的交易对列表处理器。",
-    "category": "pairlist",
-    "ui_visible": true
-  },
-  "pair_whitelist": {
-    "type": "List",
-    "default": [],
-    "description": "使用 StaticPairList 时要交易的交易对列表。例如：[\"BTC/USDT\", \"ETH/USDT\"]",
     "category": "pairlist",
     "ui_visible": true
   },

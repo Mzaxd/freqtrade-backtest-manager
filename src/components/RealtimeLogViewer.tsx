@@ -8,12 +8,12 @@ interface RealtimeLogViewerProps {
 }
 
 const RealtimeLogViewer = ({ logSourceUrl, initialLogs }: RealtimeLogViewerProps) => {
-  const [logs, setLogs] = useState<string[]>(initialLogs ? initialLogs.split('\n') : [])
+  const [logs, setLogs] = useState<string[]>([])
   const logsEndRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    const eventSource = new EventSource(logSourceUrl)
     setLogs(initialLogs ? initialLogs.split('\n') : [])
+    const eventSource = new EventSource(logSourceUrl)
 
     eventSource.onmessage = (event) => {
       const parsedData = JSON.parse(event.data)

@@ -6,6 +6,29 @@ import path from 'path'
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
+async function findLatestBacktestResult(resultsDir: string): Promise<string | null> {
+  const fs = await import('fs').then(m => m.promises);
+  const fsSync = await import('fs');
+  try {
+    const files = await fs.readdir(resultsDir);
+    const jsonFiles = files
+      .filter(f => f.startsWith('backtest-result-') && f.endsWith('.zip'))
+      .map(file => ({ file, mtime: fsSync.statSync(path.join(resultsDir, file)).mtime }))
+      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+
+    if (jsonFiles.length === 0) {
+      return null;
+    }
+    return path.join(resultsDir, jsonFiles[0].file);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      console.warn(`Backtest results directory not found: ${resultsDir}`);
+      return null;
+    }
+    throw error;
+  }
+}
+
 export async function processBacktest(taskId: string) {
   try {
     // 更新任务状态为 RUNNING
@@ -42,7 +65,7 @@ export async function processBacktest(taskId: string) {
       '--strategy-path', path.posix.join(containerUserDataPath, 'strategies'),
       '--timerange', `${task.timerangeStart?.toISOString().split('T')[0].replace(/-/g, '')}-${task.timerangeEnd?.toISOString().split('T')[0].replace(/-/g, '')}`,
       '--export', 'trades',
-      '--export-filename', path.posix.join(containerUserDataPath, 'data', `backtest_${taskId}.json`),
+      '--cache', 'none',
     ]
 
     console.log(`Executing: ${command} ${args.join(' ')}`);
@@ -76,26 +99,31 @@ export async function processBacktest(taskId: string) {
     const fullLogs = logs.join('\n')
 
     if (exitCode === 0) {
-      // 读取结果文件
-      const fs = await import('fs').then(m => m.promises)
-      const resultPath = path.join(userDataPath, 'data', `backtest_${taskId}.json`);
+      const backtestResultsDir = path.join(userDataPath, 'backtest_results');
+      const resultPath = await findLatestBacktestResult(backtestResultsDir);
       
       let resultsSummary = null
-      try {
-        const resultData = await fs.readFile(resultPath, 'utf8')
-        const result = JSON.parse(resultData)
-        
-        // 提取关键指标
-        resultsSummary = {
-          totalTrades: result.trades?.length || 0,
-          totalProfit: result.total_profit || 0,
-          profitPercent: result.profit_percent || 0,
-          winRate: result.win_rate || 0,
-          sharpeRatio: result.sharpe_ratio || 0,
-          maxDrawdown: result.max_drawdown || 0,
-        }    
-      } catch (error) {
-        console.error('Failed to read result file:', error)
+      let plotProfitUrl = null
+
+      if (resultPath) {
+        try {
+          const fs = await import('fs').then(m => m.promises)
+          const resultData = await fs.readFile(resultPath, 'utf8')
+          const result = JSON.parse(resultData)
+          
+          // The result is nested under the strategy name.
+          const strategyName = Object.keys(result.strategy)[0];
+          const strategyResult = result.strategy[strategyName];
+          
+          // Store the entire strategy result object
+          resultsSummary = strategyResult;
+          
+        } catch (error) {
+          console.error('Failed to read or process result file:', error)
+          logs.push(`\nError processing result file: ${(error as Error).message}`);
+        }
+      } else {
+        logs.push('\nWarning: Could not find backtest result file.');
       }
 
       // 更新任务状态为 COMPLETED
@@ -106,7 +134,8 @@ export async function processBacktest(taskId: string) {
           completedAt: new Date(),
           resultsSummary: resultsSummary ?? Prisma.JsonNull,
           rawOutputPath: resultPath,
-          logs: fullLogs,
+          plotProfitUrl: null,
+          logs: logs.join('\n'),
         },
       })
     } else {

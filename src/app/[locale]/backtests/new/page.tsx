@@ -216,7 +216,7 @@ export default function NewBacktestPage() {
                 <Label htmlFor="start">开始时间</Label>
                 <Input
                   id="start"
-                  type="datetime-local"
+                  type="date"
                   value={formData.timerangeStart}
                   onChange={(e) => setFormData({ ...formData, timerangeStart: e.target.value })}
                 />
@@ -225,7 +225,7 @@ export default function NewBacktestPage() {
                 <Label htmlFor="end">结束时间</Label>
                 <Input
                   id="end"
-                  type="datetime-local"
+                  type="date"
                   value={formData.timerangeEnd}
                   onChange={(e) => setFormData({ ...formData, timerangeEnd: e.target.value })}
                 />

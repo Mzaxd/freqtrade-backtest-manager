@@ -19,13 +19,6 @@ export async function POST(
       )
     }
 
-    if (backtest.status !== 'FAILED') {
-      return NextResponse.json(
-        { error: 'Only failed backtests can be retried' },
-        { status: 400 },
-      )
-    }
-
     // Reset the backtest status
     const updatedBacktest = await prisma.backtestTask.update({
       where: { id: params.id },

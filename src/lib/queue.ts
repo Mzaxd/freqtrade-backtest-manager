@@ -25,6 +25,10 @@ export const dataDownloadQueue = new Queue('dataDownload', {
   connection,
 })
 
+export const plotQueue = new Queue('plot', {
+  connection,
+})
+
 export const createWorker = (queueName: string, processor: (job: any) => Promise<void>) => {
   return new Worker(queueName, processor, {
     connection,

@@ -180,7 +180,7 @@ export default function BacktestsPage() {
                     <p className="text-sm text-muted-foreground">
                       完成时间: {format(new Date(backtest.completedAt), 'PPpp', { locale: zhCN })}
                     </p>
-                 )}
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge className={getStatusColor(backtest.status)}>
@@ -189,16 +189,14 @@ export default function BacktestsPage() {
                   <Link href={`/backtests/${backtest.id}`}>
                     <Button variant="outline" size="sm">查看详情</Button>
                   </Link>
-                  {backtest.status === 'FAILED' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRetry(backtest.id)}
-                      disabled={retryMutation.isPending}
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRetry(backtest.id)}
+                    disabled={retryMutation.isPending}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>

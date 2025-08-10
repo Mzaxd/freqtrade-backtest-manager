@@ -32,12 +32,14 @@ model BacktestTask {
   id             String    @id @default(cuid())
   name           String
   status         String
+  timeframe      String?
   timerangeStart DateTime?
   timerangeEnd   DateTime?
   createdAt      DateTime  @default(now())
   completedAt    DateTime?
   resultsSummary Json?
   rawOutputPath  String?
+  plotProfitUrl  String?
   logs           String?
   strategyId     Int
   configId       Int?
