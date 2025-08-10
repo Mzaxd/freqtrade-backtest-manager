@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
 import Link from 'next/link'
 import {
   AlertDialog,
@@ -20,6 +19,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Trash2, RefreshCw } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 
 // 定义类型
 interface Strategy {
@@ -68,6 +68,7 @@ async function getBacktests() {
 }
 
 export default function BacktestsPage() {
+  const t = useTranslations('BacktestHistory');
   const { data: backtests, isLoading } = useQuery({
     queryKey: ['backtests'],
     queryFn: getBacktests,
@@ -139,7 +140,7 @@ export default function BacktestsPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">回测历史</h1>
+        <h1 className="text-3xl font-bold mb-6">{t('title')}</h1>
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
             <Card key={i} className="animate-pulse">
@@ -156,9 +157,9 @@ export default function BacktestsPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">回测历史</h1>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
         <Link href="/backtests/new">
-          <Button>新建回测</Button>
+          <Button>{t('newBacktest')}</Button>
         </Link>
       </div>
 
@@ -170,15 +171,15 @@ export default function BacktestsPage() {
                 <div>
                   <h3 className="text-lg font-semibold">{backtest.name}</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    策略: {backtest.strategy?.className} •
-                    配置: {backtest.config?.name || '默认配置'}
+                    {t('strategy')}: {backtest.strategy?.className} •
+                    {t('config')}: {backtest.config?.name || t('defaultConfig')}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    创建时间: {format(new Date(backtest.createdAt), 'PPpp', { locale: zhCN })}
+                    {t('createdAt')}: {format(new Date(backtest.createdAt), 'PPpp')}
                   </p>
                   {backtest.completedAt && (
                     <p className="text-sm text-muted-foreground">
-                      完成时间: {format(new Date(backtest.completedAt), 'PPpp', { locale: zhCN })}
+                      {t('completedAt')}: {format(new Date(backtest.completedAt), 'PPpp')}
                     </p>
                   )}
                 </div>
@@ -187,7 +188,7 @@ export default function BacktestsPage() {
                     {backtest.status}
                   </Badge>
                   <Link href={`/backtests/${backtest.id}`}>
-                    <Button variant="outline" size="sm">查看详情</Button>
+                    <Button variant="outline" size="sm">{t('viewDetails')}</Button>
                   </Link>
                   <Button
                     variant="outline"
@@ -206,17 +207,17 @@ export default function BacktestsPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>你确定吗?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                          此操作无法撤销。这将永久删除您的回测记录。
+                          {t('deleteDialog.description')}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDelete(backtest.id)}
                           >
-                          确认删除
+                          {t('deleteDialog.confirm')}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

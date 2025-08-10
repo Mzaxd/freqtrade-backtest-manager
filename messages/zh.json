@@ -86,5 +86,174 @@
     "next": "下一页",
     "page": "页",
     "rowsPerPage": "每页行数"
+  },
+  "BacktestHistory": {
+    "title": "回测历史",
+    "newBacktest": "新建回测",
+    "strategy": "策略",
+    "config": "配置",
+    "defaultConfig": "默认配置",
+    "createdAt": "创建时间",
+    "completedAt": "完成时间",
+    "viewDetails": "查看详情",
+    "deleteDialog": {
+      "title": "你确定吗?",
+      "description": "此操作无法撤销。这将永久删除您的回测记录。",
+      "cancel": "取消",
+      "confirm": "确认删除"
+    }
+  },
+  "StrategyManagement": {
+    "title": "策略管理",
+    "uploadStrategy": "上传策略",
+    "filename": "文件名",
+    "description": "描述",
+    "createdAt": "创建时间",
+    "deleteDialog": {
+      "title": "确认删除策略",
+      "description": "您确定要删除策略 “{strategyName}” 吗？此操作不可撤销。",
+      "error": "错误: {error}",
+      "cancel": "取消",
+      "deleting": "删除中...",
+      "delete": "删除"
+    }
+  },
+  "ConfigManagement": {
+    "title": "配置管理",
+    "newConfig": "新建配置",
+    "loading": "正在加载配置列表...",
+    "loadFailed": "加载失败",
+    "loadFailedMessage": "无法从服务器获取配置数据。",
+    "noConfigs": {
+      "title": "没有找到任何配置",
+      "description": "开始您的第一次回测，请先创建一个新的配置吧！",
+      "createButton": "创建第一个配置"
+    },
+    "noDescription": "暂无描述",
+    "lastUpdated": "最后更新",
+    "deleteFailed": "删除失败",
+    "deleteDialog": {
+      "title": "您确定要删除吗?",
+      "description": "此操作无法撤销。这将永久删除配置 “{configName}”。",
+      "cancel": "取消",
+      "confirm": "确定删除"
+    }
+  },
+  "NewBacktest": {
+    "title": "新建回测",
+    "basicInfo": "基本信息",
+    "taskName": "任务名称",
+    "taskNamePlaceholder": "输入回测任务名称",
+    "strategy": "策略",
+    "selectStrategy": "选择策略",
+    "config": "配置",
+    "selectConfig": "选择配置",
+    "startTime": "开始时间",
+    "endTime": "结束时间",
+    "error": "错误",
+    "cancel": "取消",
+    "createBacktest": "创建回测",
+    "loadError": {
+      "title": "加载失败",
+      "message": "无法加载数据，请稍后重试"
+    },
+    "validation": {
+      "nameRequired": "任务名称不能为空",
+      "strategyRequired": "请选择策略",
+      "configRequired": "请选择配置",
+      "timeRangeRequired": "请选择时间范围",
+      "timeRangeInvalid": "结束时间必须晚于开始时间"
+    }
+  },
+  "BacktestDetail": {
+    "createdAt": "创建时间",
+    "retrying": "正在重试...",
+    "retry": "重新回测",
+    "notFound": "回测任务未找到",
+    "loadError": {
+      "title": "加载失败"
+    },
+    "tabs": {
+      "overview": "概览",
+      "analysis": "交易分析",
+      "logs": "日志",
+      "trades": "交易列表"
+    },
+    "basicInfo": {
+      "title": "基本信息",
+      "strategy": "策略",
+      "config": "配置",
+      "startTime": "开始时间",
+      "endTime": "结束时间"
+    },
+    "results": {
+      "title": "回测结果",
+      "totalTrades": "总交易数",
+      "totalProfit": "总收益",
+      "profitRate": "收益率",
+      "winRate": "胜率"
+    },
+    "analysis": {
+      "title": "交易分析",
+      "noChart": "回测已完成，但尚未生成交易分析图表。",
+      "generating": "正在生成图表...",
+      "generate": "生成图表",
+      "generateFailed": "生成图表失败",
+      "pending": "回测成功后将在此处显示图表。"
+    },
+    "logs": {
+      "title": "日志",
+      "noLogs": "此回测任务没有可显示的日志。"
+    }
+  },
+  "ConfigEditor": {
+    "noIdProvided": "未提供ID",
+    "loading": "正在加载配置...",
+    "loadFailed": "加载失败",
+    "loadFailedMessage": "无法从服务器获取配置数据。",
+    "loadTemplateFailed": "加载配置模板失败！",
+    "createSuccess": "配置已成功创建！",
+    "updateSuccess": "配置已成功更新！",
+    "saveFailed": "保存配置失败",
+    "nameRequired": "配置名称不能为空！",
+    "invalidJson": "JSON 配置格式无效，请更正后再保存。",
+    "titleNew": "创建新配置",
+    "titleEdit": "编辑配置",
+    "description": "通过直接编辑 JSON 来管理您的 Freqtrade 配置。",
+    "configName": "配置名称",
+    "configNamePlaceholder": "例如: 稳定币对剥头皮策略 V1",
+    "configDescription": "描述 (可选)",
+    "configDescriptionPlaceholder": "关于这个配置的一些说明，方便以后记起它的用途",
+    "configJson": "配置 JSON",
+    "loadingTemplate": "加载模板...",
+    "hideDocs": "隐藏文档",
+    "showDocs": "显示文档",
+    "createButton": "创建配置",
+    "saveButton": "保存更改"
+},
+"ConfigDocumentation": {
+  "title": "配置文档",
+  "loading": "加载文档...",
+  "loadFailed": "无法加载配置文档。",
+  "searchPlaceholder": "搜索参数名称或描述...",
+  "type": "类型",
+  "default": "默认值",
+  "allowedValues": "可选值",
+  "noMatch": "未找到匹配的参数。",
+  "categories": {
+    "main": "核心配置",
+    "exchange": "交易所",
+    "pairlist": "交易对列表",
+    "risk_management": "风险管理",
+    "trading_behavior": "交易行为",
+    "api_server": "API 服务器",
+    "notifications": "通知",
+    "edge": "边缘计算",
+    "freqai": "FreqAI 机器学习",
+    "experimental": "实验性功能",
+    "data": "数据配置",
+    "strategy": "策略配置",
+    "other": "其他"
   }
+}
 }

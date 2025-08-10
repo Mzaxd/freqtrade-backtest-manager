@@ -9,13 +9,14 @@ import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { pinyin } from 'pinyin'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Loader2, Save } from 'lucide-react'
+import { Loader2, Save, BookOpen } from 'lucide-react'
 import ConfigDocumentation from './ConfigDocumentation'
 
 // 定义表单的 props
@@ -57,6 +58,7 @@ const generateSafeFilename = (name: string): string => {
 
 
 const ConfigEditor: React.FC<ConfigEditorProps> = ({ initialData, isNew }) => {
+  const t = useTranslations('ConfigEditor');
   const router = useRouter()
   const queryClient = useQueryClient()
   const { theme } = useTheme()
@@ -65,6 +67,7 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ initialData, isNew }) => {
   const [description, setDescription] = useState(initialData?.description || '')
   const [jsonContent, setJsonContent] = useState('')
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(isNew)
+  const [isDocVisible, setIsDocVisible] = useState(false)
 
   useEffect(() => {
     if (isNew) {
@@ -75,7 +78,7 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ initialData, isNew }) => {
           setJsonContent(JSON.stringify(template, null, 2))
         } catch (error) {
           console.error("Failed to fetch config template:", error)
-          toast.error("加载配置模板失败！")
+          toast.error(t('loadTemplateFailed'))
           setJsonContent('{}')
         } finally {
           setIsLoadingTemplate(false)
@@ -91,18 +94,18 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ initialData, isNew }) => {
     mutationFn: saveConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey:['configs']})
-      toast.success(isNew ? '配置已成功创建！' : '配置已成功更新！');
+      toast.success(isNew ? t('createSuccess') : t('updateSuccess'));
       router.push('/configs');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error(error)
-      toast.error(`保存配置失败: ${error.message}`)
+      toast.error(`${t('saveFailed')}: ${error.message}`)
     },
   })
 
   const handleSubmit = () => {
     if (!name.trim()) {
-        toast.error("配置名称不能为空！");
+        toast.error(t('nameRequired'));
         return;
     }
 
@@ -110,7 +113,7 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ initialData, isNew }) => {
     try {
       parsedJson = JSON.parse(jsonContent)
     } catch (error) {
-      toast.error("JSON 配置格式无效，请更正后再保存。");
+      toast.error(t('invalidJson'));
       console.error("Invalid JSON format:", error);
       return;
     }
@@ -131,34 +134,34 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ initialData, isNew }) => {
       <div className="flex-grow w-2/3 p-6 flex flex-col">
         <Card className="flex-grow flex flex-col">
           <CardHeader>
-            <CardTitle>{isNew ? '创建新配置' : '编辑配置'}</CardTitle>
-            <CardDescription>通过直接编辑 JSON 来管理您的 Freqtrade 配置。</CardDescription>
+            <CardTitle>{isNew ? t('titleNew') : t('titleEdit')}</CardTitle>
+            <CardDescription>{t('description')}</CardDescription>
           </CardHeader>
           <CardContent className="flex-grow flex flex-col gap-4">
             <div className="space-y-2">
-              <Label htmlFor="config-name">配置名称</Label>
+              <Label htmlFor="config-name">{t('configName')}</Label>
               <Input
                 id="config-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="例如: 稳定币对剥头皮策略 V1"
+                placeholder={t('configNamePlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="config-description">描述 (可选)</Label>
+              <Label htmlFor="config-description">{t('configDescription')}</Label>
               <Textarea
                 id="config-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="关于这个配置的一些说明，方便以后记起它的用途"
+                placeholder={t('configDescriptionPlaceholder')}
               />
             </div>
             <div className="space-y-2 flex-grow flex flex-col">
-              <Label htmlFor="json-editor">配置 JSON</Label>
+              <Label htmlFor="json-editor">{t('configJson')}</Label>
               {isLoadingTemplate ? (
                   <div className="flex justify-center items-center h-full">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    <p className="ml-3 text-muted-foreground">加载模板...</p>
+                    <p className="ml-3 text-muted-foreground">{t('loadingTemplate')}</p>
                   </div>
               ) : (
                 <CodeMirror
@@ -174,16 +177,22 @@ const ConfigEditor: React.FC<ConfigEditorProps> = ({ initialData, isNew }) => {
             </div>
           </CardContent>
         </Card>
-        <div className="flex justify-end mt-4">
+        <div className="flex justify-end items-center mt-4 space-x-4">
+          <Button variant="outline" onClick={() => setIsDocVisible(!isDocVisible)}>
+            <BookOpen className="mr-2 h-4 w-4" />
+            {isDocVisible ? t('hideDocs') : t('showDocs')}
+          </Button>
           <Button onClick={handleSubmit} disabled={mutation.isPending}>
             {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            {isNew ? '创建配置' : '保存更改'}
+            {isNew ? t('createButton') : t('saveButton')}
           </Button>
         </div>
       </div>
-      <div className="w-1/3 h-full overflow-y-auto">
-        <ConfigDocumentation />
-      </div>
+      {isDocVisible && (
+        <div className="w-1/3 h-full overflow-y-auto">
+          <ConfigDocumentation />
+        </div>
+      )}
     </div>
   )
 }

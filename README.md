@@ -1,130 +1,93 @@
-# Freqtrade 回测管理器
+# Freqtrade Backtest Manager
 
-基于 Next.js 的 Freqtrade 可视化回测平台，提供现代化的 Web 界面来管理策略、配置和回测任务。
+[//]: # (语言切换链接)
+<p align="center">
+  <a href="README.md">中文</a> | <a href="README.en.md">English</a>
+</p>
 
-## 功能特性
+[//]: # (徽章)
+<p align="center">
+  <img src="https://img.shields.io/github/license/your-username/freqtrade-backtest-manager" alt="License">
+  <img src="https://img.shields.io/github/stars/your-username/freqtrade-backtest-manager" alt="Stars">
+  <img src="https://img.shields.io/github/forks/your-username/freqtrade-backtest-manager" alt="Forks">
+</p>
 
-- 📊 **仪表盘**: 展示关键指标和最近回测
-- 🔄 **回测中心**: 创建、管理和监控回测任务
-- 📈 **实时日志**: 查看运行中任务的实时日志
-- 🎯 **策略管理**: 上传和管理策略文件
-- ⚙️ **配置管理**: 上传和管理配置文件
-- 🚀 **异步处理**: 基于 BullMQ 的后台任务队列
+## 简介
+
+Freqtrade Backtest Manager 是一个为 [Freqtrade](https://www.freqtrade.io/) 用户量身打造的Web界面，旨在提供一个直观、高效、功能强大的回测管理与分析平台。通过本工具，您可以轻松地创建、管理、运行和可视化您的 Freqtrade 回测任务，从而极大地提升策略研发和优化的效率。
+
+## 核心功能
+
+*   **📊 可视化回测仪表盘**: 在一个统一的视图中跟踪所有回测任务的状态。
+    *   *![仪表盘截图](https://blog-1310221847.cos.ap-beijing.myqcloud.com/202508102123426.png)*
+*   **🚀 一键式回测创建**: 通过友好的Web表单轻松配置并启动新的回测任务，无需手动编辑配置文件。
+    *   *![新建回测截图](https://blog-1310221847.cos.ap-beijing.myqcloud.com/202508102124499.png)*
+*   **📈 深度回测结果分析**: 查看详细的回测报告，包括资金曲线、利润分布、交易列表、交易对表现和退出原因分析等。
+    *   *![回测详情截图](https://blog-1310221847.cos.ap-beijing.myqcloud.com/202508102124022.png)*
+*   **📝 策略与配置管理**: 集中管理您的所有 Freqtrade 配置文件和策略文件。
+    *   *![配置管理截图](https://blog-1310221847.cos.ap-beijing.myqcloud.com/202508102125613.png)*
+*   **☁️ 历史数据管理**: 管理和下载用于回测的K线数据。
+    *   *![数据管理截图](https://blog-1310221847.cos.ap-beijing.myqcloud.com/202508102125680.png)*
+*   **🌐 多语言支持**: 内置中文和英文支持。
 
 ## 技术栈
 
-- **前端**: Next.js 15, TypeScript, Tailwind CSS, shadcn/ui
-- **后端**: Next.js API Routes, Prisma ORM
-- **数据库**: PostgreSQL
-- **消息队列**: BullMQ + Redis
-- **容器化**: Docker & Docker Compose
+*   **前端**: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
+*   **后端**: Next.js (API Routes), Prisma, BullMQ
+*   **数据库**: PostgreSQL (默认), 得益于 Prisma，可轻松替换为 MySQL, SQLite 等
+*   **后台任务**: Node.js (tsx), BullMQ Worker
 
 ## 快速开始
 
 ### 环境要求
 
-- Node.js 20+
-- PostgreSQL 15+
-- Redis 7+
-- Freqtrade (已安装并配置好)
+*   Node.js (>= 20.x)
+*   pnpm
+*   Python (用于 Freqtrade)
+*   Freqtrade 安装实例
 
-### 1. 安装依赖
+### 安装与启动
 
-```bash
-pnpm install
-```
+1.  **克隆仓库**
+    ```bash
+    git clone https://github.com/your-username/freqtrade-backtest-manager.git
+    cd freqtrade-backtest-manager
+    ```
 
-### 2. 配置环境变量
+2.  **安装依赖**
+    ```bash
+    pnpm install
+    ```
 
-确保 `.env` 文件已配置：
+3.  **配置环境变量**
+    复制 `.env.example` 为 `.env` 并根据您的 Freqtrade 环境进行配置。
+    ```bash
+    cp .env.example .env
+    ```
 
-```bash
-# Database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/freqtrade_backtest_manager"
+4.  **数据库迁移**
+    ```bash
+    pnpm db:migrate
+    ```
 
-# Redis
-REDIS_URL="redis://localhost:6379"
+5.  **启动应用**
+    您需要启动两个进程：
+    *   **Web 服务器**:
+        ```bash
+        pnpm dev
+        ```
+    *   **后台 Worker (在另一个终端中)**:
+        ```bash
+        pnpm worker
+        ```
 
-# Freqtrade
-FREQTRADE_PATH="/usr/local/bin/freqtrade"
-```
+6.  **访问应用**
+    打开浏览器并访问 `http://localhost:5173`。
 
-### 3. 数据库设置
+## 贡献
 
-```bash
-# 创建数据库
-createdb freqtrade_backtest_manager
+欢迎任何形式的贡献！如果您有任何想法、建议或发现了 Bug，请随时提交 Issue 或 Pull Request。
 
-# 运行数据库迁移
-pnpm db:push
-```
+## 许可证
 
-### 4. 启动开发环境
-
-```bash
-# 启动数据库和 Redis (使用 Docker)
-docker-compose up -d postgres redis
-
-# 启动 Next.js 开发服务器
-pnpm dev
-
-# 启动工作进程 (新终端)
-pnpm worker
-```
-
-### 5. 使用 Docker Compose (推荐)
-
-```bash
-# 启动所有服务
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
-```
-
-## 项目结构
-
-```
-freqtrade-backtest-manager/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── api/               # API 路由
-│   │   ├── backtests/         # 回测相关页面
-│   │   ├── configs/           # 配置管理页面
-│   │   ├── strategies/        # 策略管理页面
-│   │   └── dashboard/         # 仪表盘页面
-│   ├── components/            # 共享组件
-│   ├── lib/                   # 共享库
-│   └── workers/               # 后台任务
-├── prisma/                    # 数据库 Schema
-├── strategies/                # 策略文件存储
-├── configs/                   # 配置文件存储
-├── data/                      # 回测数据存储
-└── docker-compose.yml         # Docker 配置
-```
-
-## 使用说明
-
-1. **上传策略**: 在策略管理页面上传 `.py` 策略文件
-2. **上传配置**: 在配置管理页面上传 `.json` 配置文件
-3. **创建回测**: 在回测页面选择策略、配置和时间范围创建回测任务
-4. **查看结果**: 在回测详情页面查看回测结果和实时日志
-
-## 开发命令
-
-```bash
-pnpm dev          # 启动开发服务器
-pnpm build        # 构建生产版本
-pnpm start        # 启动生产服务器
-pnpm worker       # 启动工作进程
-pnpm db:generate  # 生成 Prisma 客户端
-pnpm db:migrate   # 运行数据库迁移
-pnpm db:studio    # 启动 Prisma Studio
-```
-
-## 注意事项
-
-- 确保 Freqtrade 已正确安装并配置
-- 策略文件需要放在 `strategies/` 目录下
-- 配置文件需要放在 `configs/` 目录下
-- 回测结果会保存在 `data/` 目录下
+本项目采用 [MIT](LICENSE) 许可证。

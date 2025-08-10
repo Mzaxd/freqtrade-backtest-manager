@@ -5,12 +5,14 @@ import { Input } from '@/components/ui/input'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Search } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
 
 // 定义配置参数的接口
 interface Param {
   type: string
   default: any
   description: string
+  en_description?: string
   category: string
   allowed_values?: any[]
 }
@@ -19,23 +21,9 @@ interface ConfigFile {
   [key: string]: Param
 }
 
-const categoryTranslations: Record<string, string> = {
-    main: '核心配置',
-    exchange: '交易所',
-    pairlist: '交易对列表',
-    risk_management: '风险管理',
-    trading_behavior: '交易行为',
-    api_server: 'API 服务器',
-    notifications: '通知',
-    edge: '边缘计算',
-    freqai: 'FreqAI 机器学习',
-    experimental: '实验性功能',
-    data: '数据配置',
-    strategy: '策略配置',
-    other: '其他'
-};
-
 const ConfigDocumentation = () => {
+  const t = useTranslations('ConfigDocumentation');
+  const locale = useLocale();
   const [params, setParams] = useState<ConfigFile | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -66,7 +54,8 @@ const ConfigDocumentation = () => {
       return (
         key.toLowerCase().includes(lowerSearchTerm) ||
         param.description.toLowerCase().includes(lowerSearchTerm) ||
-        (categoryTranslations[param.category] || param.category).toLowerCase().includes(lowerSearchTerm)
+        (param.en_description && param.en_description.toLowerCase().includes(lowerSearchTerm)) ||
+        (t(`categories.${param.category}`) || param.category).toLowerCase().includes(lowerSearchTerm)
       )
     })
 
@@ -84,13 +73,13 @@ const ConfigDocumentation = () => {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <p className="ml-3 text-muted-foreground">加载文档...</p>
+        <p className="ml-3 text-muted-foreground">{t('loading')}</p>
       </div>
     )
   }
 
   if (!params) {
-    return <div className="text-destructive">无法加载配置文档。</div>
+    return <div className="text-destructive">{t('loadFailed')}</div>
   }
 
   const renderValue = (value: any) => {
@@ -109,12 +98,12 @@ const ConfigDocumentation = () => {
   return (
     <div className="flex flex-col h-full border-l bg-card">
       <div className="p-4 border-b">
-        <h3 className="text-lg font-semibold mb-2">配置文档</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('title')}</h3>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="搜索参数名称或描述..."
+            placeholder={t('searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -127,26 +116,32 @@ const ConfigDocumentation = () => {
             Object.entries(filteredAndGroupedParams).map(([category, paramsInCategory]) => (
               <AccordionItem value={category} key={category}>
                 <AccordionTrigger className="px-4 text-base font-medium capitalize hover:no-underline">
-                  {categoryTranslations[category] || category.replace(/_/g, ' ')}
+                  {t.rich(`categories.${category}`, {
+                    // This is a trick to check if the translation exists.
+                    // If not, it will fallback to the default render.
+                    p: () => category.replace(/_/g, ' ')
+                  }) === `categories.${category}` ? category.replace(/_/g, ' ') : t(`categories.${category}`)}
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="flex flex-col gap-4 p-4 pt-0">
                     {Object.entries(paramsInCategory).map(([name, param]) => (
                       <div key={name} className="border-t pt-4">
                         <h4 className="font-semibold text-primary">{name}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">{param.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {locale === 'en' ? param.en_description : param.description}
+                        </p>
                         <div className="mt-2 space-y-1 text-xs">
                            <div className="flex items-center">
-                                <Badge variant="secondary" className="w-20 text-center justify-center">类型</Badge>
+                                <Badge variant="secondary" className="w-20 text-center justify-center">{t('type')}</Badge>
                                 <code className="ml-2 text-sm">{param.type}</code>
                            </div>
                            <div className="flex items-center">
-                                <Badge variant="outline" className="w-20 text-center justify-center">默认值</Badge>
+                                <Badge variant="outline" className="w-20 text-center justify-center">{t('default')}</Badge>
                                 <code className="ml-2 text-sm">{renderValue(param.default)}</code>
                            </div>
                            {param.allowed_values && (
                                <div className="flex items-start">
-                                    <Badge variant="outline" className="w-20 text-center justify-center mt-1">可选值</Badge>
+                                    <Badge variant="outline" className="w-20 text-center justify-center mt-1">{t('allowedValues')}</Badge>
                                     <div className="ml-2 flex flex-wrap gap-1">
                                         {param.allowed_values.map((val, i) => <Badge key={i} variant="default">{renderValue(val)}</Badge>)}
                                     </div>
@@ -161,7 +156,7 @@ const ConfigDocumentation = () => {
             ))
           ) : (
             <div className="p-6 text-center text-muted-foreground">
-              <p>未找到匹配的参数。</p>
+              <p>{t('noMatch')}</p>
             </div>
           )}
         </Accordion>

@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Upload, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +21,7 @@ import {
 
 async function getStrategies() {
   const response = await fetch('/api/strategies')
-  if (!response.ok) throw new Error('获取策略列表失败')
+  if (!response.ok) throw new Error('Failed to fetch strategies')
   const result = await response.json()
   return result.data ?? []
 }
@@ -32,12 +32,13 @@ async function deleteStrategy(id: number): Promise<any> {
   })
   if (!response.ok) {
     const errorData = await response.json()
-    throw new Error(errorData.error || '删除策略失败')
+    throw new Error(errorData.error || 'Failed to delete strategy')
   }
   return response.json()
 }
 
 export default function StrategiesPage() {
+  const t = useTranslations('StrategyManagement')
   const queryClient = useQueryClient()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedStrategy, setSelectedStrategy] = useState<any>(null)
@@ -72,14 +73,14 @@ export default function StrategiesPage() {
         queryClient.invalidateQueries({ queryKey: ['strategies'] })
       }
     } catch (uploadError) {
-      console.error('上传策略失败:', uploadError)
+      console.error('Failed to upload strategy:', uploadError)
     }
   }
 
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">策略管理</h1>
+        <h1 className="text-3xl font-bold mb-6">{t('title')}</h1>
         <div className="animate-pulse">
           <Card>
             <CardContent className="p-6">
@@ -94,11 +95,11 @@ export default function StrategiesPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">策略管理</h1>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
         <Button asChild>
           <label className="cursor-pointer">
             <Upload className="w-4 h-4 mr-2" />
-            上传策略
+            {t('uploadStrategy')}
             <input
               type="file"
               accept=".py"
@@ -136,20 +137,20 @@ export default function StrategiesPage() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>确认删除策略</AlertDialogTitle>
+                      <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        您确定要删除策略 "{selectedStrategy?.className}" 吗？此操作不可撤销。
-                        {error && <p className="text-red-500 mt-2">错误: {(error as Error).message}</p>}
+                        {t('deleteDialog.description', { strategyName: selectedStrategy?.className })}
+                        {error && <p className="text-red-500 mt-2">{t('deleteDialog.error', { error: (error as Error).message })}</p>}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>取消</AlertDialogCancel>
+                      <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => performDelete(selectedStrategy.id)}
                         className="bg-red-500 hover:bg-red-600"
                         disabled={isDeleting}
                       >
-                        {isDeleting ? '删除中...' : '删除'}
+                        {isDeleting ? t('deleteDialog.deleting') : t('deleteDialog.delete')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -159,19 +160,19 @@ export default function StrategiesPage() {
             <CardContent>
               <div className="space-y-2">
                 <div>
-                  <span className="text-sm text-muted-foreground">文件名：</span>
+                  <span className="text-sm text-muted-foreground">{t('filename')}:</span>
                   <span className="text-sm">{strategy.filename}</span>
                 </div>
                 {strategy.description && (
                   <div>
-                    <span className="text-sm text-muted-foreground">描述：</span>
+                    <span className="text-sm text-muted-foreground">{t('description')}:</span>
                     <span className="text-sm">{strategy.description}</span>
                   </div>
                 )}
                 <div>
-                  <span className="text-sm text-muted-foreground">创建时间：</span>
+                  <span className="text-sm text-muted-foreground">{t('createdAt')}:</span>
                   <span className="text-sm">
-                    {format(new Date(strategy.createdAt), 'PP', { locale: zhCN })}
+                    {format(new Date(strategy.createdAt), 'PP')}
                   </span>
                 </div>
               </div>

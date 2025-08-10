@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, Query } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import RealtimeLogViewer from '@/components/RealtimeLogViewer'
@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SummaryMetricsCard } from "@/components/SummaryMetricsCard"
 import { RefreshCw, Image } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { format } from 'date-fns'
 import { TradesTable } from "@/components/TradesTable";
 
 interface BacktestTask {
@@ -49,6 +51,7 @@ async function getBacktest(id: string, page: number, limit: number, sortBy: stri
 }
 
 export default function BacktestDetailPage() {
+  const t = useTranslations('BacktestDetail');
   const params = useParams()
   const id = params.id as string
   const queryClient = useQueryClient()
@@ -63,7 +66,7 @@ export default function BacktestDetailPage() {
   const { data: backtest, isLoading, error } = useQuery({
     queryKey: ['backtest', id, page, limit, sortBy, sortOrder, filters],
     queryFn: () => getBacktest(id, page, limit, sortBy, sortOrder, filters),
-    refetchInterval: (query: any) => {
+    refetchInterval: (query: Query) => {
       const data = query.state.data as BacktestTask | undefined
       if (data?.status === 'RUNNING' || data?.status === 'PENDING') {
         return 5000 // 5 seconds
@@ -113,7 +116,7 @@ export default function BacktestDetailPage() {
     return (
       <div className="container mx-auto p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="text-lg font-medium text-red-800">加载失败</h3>
+          <h3 className="text-lg font-medium text-red-800">{t('loadError.title')}</h3>
           <p className="mt-2 text-sm text-red-700">{(error as Error)?.message}</p>
         </div>
       </div>
@@ -124,7 +127,7 @@ export default function BacktestDetailPage() {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">回测任务未找到</h2>
+          <h2 className="text-2xl font-bold mb-2">{t('notFound')}</h2>
         </div>
       </div>
     )
@@ -146,46 +149,46 @@ export default function BacktestDetailPage() {
             {backtest.status}
           </span>
           <span className="text-sm text-gray-600">
-            创建时间: {new Date(backtest.createdAt).toLocaleString('zh-CN')}
+            {t('createdAt')}: {format(new Date(backtest.createdAt), 'PPpp')}
           </span>
           <Button onClick={handleRetry} disabled={retryMutation.isPending} size="sm" variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
-            {retryMutation.isPending ? '正在重试...' : '重新回测'}
+            {retryMutation.isPending ? t('retrying') : t('retry')}
           </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="justify-start">
-          <TabsTrigger value="overview">概览</TabsTrigger>
-          <TabsTrigger value="analysis">交易分析</TabsTrigger>
-          <TabsTrigger value="logs">日志</TabsTrigger>
-          <TabsTrigger value="trades">交易列表</TabsTrigger>
+          <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="analysis">{t('tabs.analysis')}</TabsTrigger>
+          <TabsTrigger value="logs">{t('tabs.logs')}</TabsTrigger>
+          <TabsTrigger value="trades">{t('tabs.trades')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
           <div className="grid gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>基本信息</CardTitle>
+                <CardTitle>{t('basicInfo.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">策略</p>
+                    <p className="text-sm text-gray-600">{t('basicInfo.strategy')}</p>
                     <p className="font-medium">{backtest.strategy.className}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">配置</p>
+                    <p className="text-sm text-gray-600">{t('basicInfo.config')}</p>
                     <p className="font-medium">{backtest.config.name}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">开始时间</p>
-                    <p className="font-medium">{new Date(backtest.timerangeStart).toLocaleDateString('zh-CN')}</p>
+                    <p className="text-sm text-gray-600">{t('basicInfo.startTime')}</p>
+                    <p className="font-medium">{format(new Date(backtest.timerangeStart), 'PP')}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">结束时间</p>
-                    <p className="font-medium">{new Date(backtest.timerangeEnd).toLocaleDateString('zh-CN')}</p>
+                    <p className="text-sm text-gray-600">{t('basicInfo.endTime')}</p>
+                    <p className="font-medium">{format(new Date(backtest.timerangeEnd), 'PP')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -194,24 +197,24 @@ export default function BacktestDetailPage() {
             {backtest.resultsSummary && (
               <Card>
                 <CardHeader>
-                  <CardTitle>回测结果</CardTitle>
+                  <CardTitle>{t('results.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600">总交易数</p>
+                      <p className="text-sm text-gray-600">{t('results.totalTrades')}</p>
                       <p className="text-2xl font-bold">{backtest.resultsSummary.total_trades || 0}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">总收益</p>
+                      <p className="text-sm text-gray-600">{t('results.totalProfit')}</p>
                       <p className="text-2xl font-bold">{backtest.resultsSummary.profit_total || 0}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">收益率</p>
+                      <p className="text-sm text-gray-600">{t('results.profitRate')}</p>
                       <p className="text-2xl font-bold">{backtest.resultsSummary.profit_total_abs || 0}%</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">胜率</p>
+                      <p className="text-sm text-gray-600">{t('results.winRate')}</p>
                       <p className="text-2xl font-bold">{backtest.resultsSummary.wins || 0} / {backtest.resultsSummary.total_trades || 0}</p>
                     </div>
                   </div>
@@ -242,24 +245,24 @@ export default function BacktestDetailPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>交易分析</CardTitle>
+                <CardTitle>{t('analysis.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {backtest.status === 'COMPLETED' ? (
                   <div>
-                    <p className="mb-4">回测已完成，但尚未生成交易分析图表。</p>
+                    <p className="mb-4">{t('analysis.noChart')}</p>
                     <Button onClick={handleGeneratePlot} disabled={isPlotting || plotMutation.isPending}>
                       <Image className="h-4 w-4 mr-2" />
-                      {isPlotting || plotMutation.isPending ? '正在生成图表...' : '生成图表'}
+                      {isPlotting || plotMutation.isPending ? t('analysis.generating') : t('analysis.generate')}
                     </Button>
                     {plotMutation.isError && (
                        <div className="mt-4 text-red-500">
-                         生成图表失败: {(plotMutation.error as Error)?.message}
+                         {t('analysis.generateFailed')}: {(plotMutation.error as Error)?.message}
                        </div>
                     )}
                   </div>
                 ) : (
-                  <p>回测成功后将在此处显示图表。</p>
+                  <p>{t('analysis.pending')}</p>
                 )}
               </CardContent>
             </Card>
@@ -287,7 +290,7 @@ export default function BacktestDetailPage() {
           {showLogs ? (
             <Card>
               <CardHeader>
-                <CardTitle>日志</CardTitle>
+                <CardTitle>{t('logs.title')}</CardTitle>
               </CardHeader>
               <CardContent className="h-[75vh] overflow-y-auto">
                 <RealtimeLogViewer
@@ -297,7 +300,7 @@ export default function BacktestDetailPage() {
               </CardContent>
             </Card>
           ) : (
-            <p>此回测任务没有可显示的日志。</p>
+            <p>{t('logs.noLogs')}</p>
           )}
         </TabsContent>
       </Tabs>

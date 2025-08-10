@@ -86,5 +86,174 @@
     "next": "Next",
     "page": "Page",
     "rowsPerPage": "Rows per page"
+  },
+  "BacktestHistory": {
+    "title": "Backtest History",
+    "newBacktest": "New Backtest",
+    "strategy": "Strategy",
+    "config": "Config",
+    "defaultConfig": "Default Config",
+    "createdAt": "Created At",
+    "completedAt": "Completed At",
+    "viewDetails": "View Details",
+    "deleteDialog": {
+      "title": "Are you sure?",
+      "description": "This action cannot be undone. This will permanently delete your backtest record.",
+      "cancel": "Cancel",
+      "confirm": "Confirm Delete"
+    }
+  },
+    "StrategyManagement": {
+    "title": "Strategy Management",
+    "uploadStrategy": "Upload Strategy",
+    "filename": "Filename",
+    "description": "Description",
+    "createdAt": "Created At",
+    "deleteDialog": {
+      "title": "Confirm Delete Strategy",
+      "description": "Are you sure you want to delete the strategy \"{strategyName}\"? This action cannot be undone.",
+      "error": "Error: {error}",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "delete": "Delete"
+    }
+  },
+  "ConfigManagement": {
+    "title": "Config Management",
+    "newConfig": "New Config",
+    "loading": "Loading config list...",
+    "loadFailed": "Load Failed",
+    "loadFailedMessage": "Could not retrieve config data from the server.",
+    "noConfigs": {
+      "title": "No configurations found",
+      "description": "To start your first backtest, please create a new configuration!",
+      "createButton": "Create First Config"
+    },
+    "noDescription": "No description",
+    "lastUpdated": "Last Updated",
+    "deleteFailed": "Delete failed",
+    "deleteDialog": {
+      "title": "Are you sure you want to delete?",
+      "description": "This action cannot be undone. This will permanently delete the config “{configName}”.",
+      "cancel": "Cancel",
+      "confirm": "Confirm Delete"
+    }
+  },
+  "NewBacktest": {
+    "title": "New Backtest",
+    "basicInfo": "Basic Information",
+    "taskName": "Task Name",
+    "taskNamePlaceholder": "Enter backtest task name",
+    "strategy": "Strategy",
+    "selectStrategy": "Select a strategy",
+    "config": "Config",
+    "selectConfig": "Select a config",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "error": "Error",
+    "cancel": "Cancel",
+    "createBacktest": "Create Backtest",
+    "loadError": {
+      "title": "Load Failed",
+      "message": "Could not load data, please try again later"
+    },
+    "validation": {
+      "nameRequired": "Task name cannot be empty",
+      "strategyRequired": "Please select a strategy",
+      "configRequired": "Please select a config",
+      "timeRangeRequired": "Please select a time range",
+      "timeRangeInvalid": "End time must be later than start time"
+    }
+  },
+  "BacktestDetail": {
+    "createdAt": "Created At",
+    "retrying": "Retrying...",
+    "retry": "Retry",
+    "notFound": "Backtest task not found",
+    "loadError": {
+      "title": "Load Failed"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "analysis": "Analysis",
+      "logs": "Logs",
+      "trades": "Trades"
+    },
+    "basicInfo": {
+      "title": "Basic Information",
+      "strategy": "Strategy",
+      "config": "Config",
+      "startTime": "Start Time",
+      "endTime": "End Time"
+    },
+    "results": {
+      "title": "Backtest Results",
+      "totalTrades": "Total Trades",
+      "totalProfit": "Total Profit",
+      "profitRate": "Profit Rate",
+      "winRate": "Win Rate"
+    },
+    "analysis": {
+      "title": "Trade Analysis",
+      "noChart": "Backtest completed, but trade analysis chart has not been generated yet.",
+      "generating": "Generating chart...",
+      "generate": "Generate Chart",
+      "generateFailed": "Failed to generate chart",
+      "pending": "Chart will be displayed here after the backtest is successful."
+    },
+    "logs": {
+      "title": "Logs",
+      "noLogs": "No logs to display for this backtest task."
+    }
+  },
+  "ConfigEditor": {
+    "noIdProvided": "No ID provided",
+    "loading": "Loading config...",
+    "loadFailed": "Load Failed",
+    "loadFailedMessage": "Could not retrieve config data from the server.",
+    "loadTemplateFailed": "Failed to load config template!",
+    "createSuccess": "Config created successfully!",
+    "updateSuccess": "Config updated successfully!",
+    "saveFailed": "Failed to save config",
+    "nameRequired": "Config name cannot be empty!",
+    "invalidJson": "Invalid JSON format. Please correct it before saving.",
+    "titleNew": "Create New Config",
+    "titleEdit": "Edit Config",
+    "description": "Manage your Freqtrade configuration by directly editing the JSON.",
+    "configName": "Config Name",
+    "configNamePlaceholder": "e.g., Stablecoin Scalping V1",
+    "configDescription": "Description (Optional)",
+    "configDescriptionPlaceholder": "Some notes about this config to remember its purpose later",
+    "configJson": "Config JSON",
+    "loadingTemplate": "Loading template...",
+    "hideDocs": "Hide Docs",
+    "showDocs": "Show Docs",
+    "createButton": "Create Config",
+    "saveButton": "Save Changes"
+},
+"ConfigDocumentation": {
+  "title": "Config Documentation",
+  "loading": "Loading documentation...",
+  "loadFailed": "Failed to load config documentation.",
+  "searchPlaceholder": "Search parameter name or description...",
+  "type": "Type",
+  "default": "Default",
+  "allowedValues": "Allowed",
+  "noMatch": "No matching parameters found.",
+  "categories": {
+    "main": "Core Config",
+    "exchange": "Exchange",
+    "pairlist": "Pairlist",
+    "risk_management": "Risk Management",
+    "trading_behavior": "Trading Behavior",
+    "api_server": "API Server",
+    "notifications": "Notifications",
+    "edge": "Edge",
+    "freqai": "FreqAI Machine Learning",
+    "experimental": "Experimental",
+    "data": "Data Config",
+    "strategy": "Strategy Config",
+    "other": "Other"
   }
+}
 }

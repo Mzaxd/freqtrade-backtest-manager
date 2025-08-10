@@ -3,6 +3,7 @@
     "type": "String",
     "default": "freqtrade",
     "description": "机器人的名称。通过API传递给客户端，可以用来区分/命名机器人。",
+    "en_description": "The name of the bot. Passed to clients via the API, can be used to distinguish/name bots.",
     "category": "main",
     "ui_visible": true
   },
@@ -10,6 +11,7 @@
     "type": "Positive integer or -1",
     "default": -1,
     "description": "机器人允许的最大开仓数量。每个交易对只能有一个开仓，所以交易对列表的长度是另一个可能适用的限制。如果为-1则忽略（即潜在的无限开仓，受交易对列表限制）。",
+    "en_description": "The maximum number of open trades allowed for the bot. Each pair can only have one open trade, so the length of the pairlist is another limit that may apply. Ignored if -1 (i.e., potentially infinite open trades, limited by pairlist).",
     "category": "main",
     "ui_visible": true
   },
@@ -17,6 +19,7 @@
     "type": "String",
     "default": "USDT",
     "description": "用于交易的加密货币。",
+    "en_description": "The cryptocurrency to use for trading.",
     "category": "main",
     "ui_visible": true
   },
@@ -24,6 +27,7 @@
     "type": "Positive float or \"unlimited\"",
     "default": "unlimited",
     "description": "机器人将用于每笔交易的加密货币数量。设置为\"unlimited\"以允许机器人使用所有可用余额。",
+    "en_description": "The amount of cryptocurrency the bot will use for each trade. Set to \"unlimited\" to allow the bot to use the full available balance.",
     "category": "main",
     "ui_visible": true
   },
@@ -31,6 +35,7 @@
     "type": "Positive float between 0.1 and 1.0",
     "default": 0.99,
     "description": "机器人允许交易的总账户余额的比例。",
+    "en_description": "The ratio of the total account balance that the bot is allowed to trade.",
     "category": "main",
     "ui_visible": false
   },
@@ -38,6 +43,7 @@
     "type": "Positive float",
     "default": 0.0,
     "description": "机器人的可用起始资本。在同一个交易所账户上运行多个机器人时很有用。",
+    "en_description": "The available starting capital for the bot. Useful when running multiple bots on the same exchange account.",
     "category": "main",
     "ui_visible": false
   },
@@ -45,6 +51,7 @@
     "type": "Boolean",
     "default": false,
     "description": "在必要时使用减少的最后押注金额。",
+    "en_description": "Use a reduced last stake amount if necessary.",
     "category": "main",
     "ui_visible": false
   },
@@ -52,6 +59,7 @@
     "type": "Float (as ratio)",
     "default": 0.5,
     "description": "定义必须留下并执行的最低押注金额比例。仅在最后押注金额被修改为减少值时适用（即如果amend_last_stake_amount设置为true）。",
+    "en_description": "Defines the minimum stake amount ratio that must be left and executed. Only applies if the last stake amount is amended to a smaller value (i.e. if amend_last_stake_amount is set to true).",
     "category": "main",
     "ui_visible": false
   },
@@ -59,6 +67,7 @@
     "type": "Positive Float as ratio",
     "default": 0.05,
     "description": "在最小交易对押注金额中保留一些金额。机器人在计算最小交易对押注金额时会保留amount_reserve_percent + 止损值，以避免可能的交易拒绝。",
+    "en_description": "Reserve some amount in the minimum pair stake amount. The bot will reserve amount_reserve_percent + stoploss value when calculating the minimum pair stake amount to avoid possible trade rejections.",
     "category": "main",
     "ui_visible": false
   },
@@ -67,6 +76,7 @@
     "default": "5m",
     "allowed_values": ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "2w", "1M"],
     "description": "要使用的时间框架（例如1m, 5m, 15m, 30m, 1h ...）。通常在配置中缺失，在策略中指定。",
+    "en_description": "The timeframe to use (e.g., 1m, 5m, 15m, 30m, 1h ...). Usually missing in the config and specified in the strategy.",
     "category": "main",
     "ui_visible": true
   },
@@ -74,6 +84,7 @@
     "type": "String",
     "default": "USD",
     "description": "用于显示利润的法定货币。",
+    "en_description": "The fiat currency to use for displaying profits.",
     "category": "main",
     "ui_visible": true
   },
@@ -81,6 +92,7 @@
     "type": "Boolean",
     "default": true,
     "description": "定义机器人是否必须在模拟运行或生产模式下运行。",
+    "en_description": "Defines if the bot has to run in dry-run or production mode.",
     "category": "main",
     "ui_visible": false
   },
@@ -88,6 +100,7 @@
     "type": "Float or Dict",
     "default": 1000.0,
     "description": "定义在模拟运行模式下机器人使用的起始金额（以押注货币计）。",
+    "en_description": "Defines the starting amount in stake currency the bot is using in dry-run mode.",
     "category": "main",
     "ui_visible": true
   },
@@ -95,6 +108,7 @@
     "type": "Boolean",
     "default": false,
     "description": "当发出/stop RPC命令、按下Ctrl+C或机器人意外死亡时取消未完成的订单。当设置为true时，这允许您使用/stop在市场崩溃的情况下取消未完成和部分完成的订单。它不影响开仓头寸。",
+    "en_description": "Cancel open orders on exit, when /stop RPC command is issued, Ctrl+C is pressed or the bot dies unexpectedly. When set to true, this allows you to cancel open and partially filled orders in case of a market crash with /stop. It does not affect open positions.",
     "category": "main",
     "ui_visible": false
   },
@@ -102,6 +116,7 @@
     "type": "Boolean",
     "default": true,
     "description": "仅在新蜡烛到达时启用指标处理。如果为false，每次循环都会填充指标，这将意味着多次处理同一根蜡烛，创建系统负载，但如果您的策略依赖于不仅仅是蜡烛的tick数据，则可能有用。",
+    "en_description": "Enable indicator processing only on new candles. If false, indicators are populated on every loop, which will mean multiple processing of the same candle, creating system load, but might be useful if your strategy depends on tick data, which is more than just the candle.",
     "category": "main",
     "ui_visible": true
   },
@@ -109,6 +124,7 @@
     "type": "Dict",
     "default": {"0": 0.1},
     "description": "设置机器人将用于退出交易的阈值比例。",
+    "en_description": "Set the threshold ratios the bot will use to exit a trade.",
     "category": "risk_management",
     "ui_visible": true
   },
@@ -116,6 +132,7 @@
     "type": "Float (as ratio)",
     "default": -0.1,
     "description": "机器人使用的止损比例值。",
+    "en_description": "The stoploss ratio value the bot is using.",
     "category": "risk_management",
     "ui_visible": true
   },
@@ -123,6 +140,7 @@
     "type": "Boolean",
     "default": false,
     "description": "启用追踪止损（基于配置或策略文件中的止损）。",
+    "en_description": "Enable trailing stoploss (based on the stoploss in config or strategy file).",
     "category": "risk_management",
     "ui_visible": true
   },
@@ -130,6 +148,7 @@
     "type": "Float",
     "default": 0.01,
     "description": "一旦达到利润就改变止损。",
+    "en_description": "Trail the stoploss once a certain profit is reached.",
     "category": "risk_management",
     "ui_visible": true
   },
@@ -137,6 +156,7 @@
     "type": "Float",
     "default": 0.0,
     "description": "应用trailing_stop_positive的偏移量。百分比值应为正值。",
+    "en_description": "The offset to use for trailing_stop_positive. The percentage value should be positive.",
     "category": "risk_management",
     "ui_visible": true
   },
@@ -144,6 +164,7 @@
     "type": "Boolean",
     "default": false,
     "description": "仅在达到偏移量时应用追踪止损。",
+    "en_description": "Only apply trailing stoploss once the offset is reached.",
     "category": "risk_management",
     "ui_visible": true
   },
@@ -151,6 +172,7 @@
     "type": "Float (as ratio)",
     "default": 0.001,
     "description": "回测/模拟运行期间使用的费用。通常不应配置，这会使freqtrade回落到交易所默认费用。设置为比率（例如0.001 = 0.1%）。每笔交易应用两次费用，一次买入，一次卖出。",
+    "en_description": "The fee to use during backtesting/dry-run. Should usually not be configured, which makes freqtrade fall back to the exchange default fee. Set as a ratio (e.g. 0.001 = 0.1%). The fee is applied twice per trade, once for buying, and once for selling.",
     "category": "exchange",
     "ui_visible": true
   },
@@ -158,6 +180,7 @@
     "type": "Float",
     "default": null,
     "description": "当交易所的历史资金费率不可用时使用的用户指定资金费率。这不会覆盖真实的历史费率。建议仅在测试特定币种且了解资金费率如何影响freqtrade的利润计算时设置为0。",
+    "en_description": "User-specified funding rate to use when the historic funding rate from the exchange is not available. This will not override the real historic rate. Suggested to set to 0 only when testing a specific coin and you know how funding rates will affect freqtrade's profit calculations.",
     "category": "exchange",
     "ui_visible": false
   },
@@ -166,6 +189,7 @@
     "default": "spot",
     "allowed_values": ["spot", "futures", "margin"],
     "description": "指定您是想定期交易、使用杠杆交易还是交易衍生品。",
+    "en_description": "Specify if you want to trade regularly, with leverage or trade derivatives.",
     "category": "trading_behavior",
     "ui_visible": true
   },
@@ -174,6 +198,7 @@
     "default": "isolated",
     "allowed_values": ["isolated", "cross"],
     "description": "使用杠杆交易时，这决定了交易者拥有的抵押品是共享还是隔离到每个交易对。",
+    "en_description": "When trading with leverage, this determines whether the collateral a trader has is shared or isolated to each pair.",
     "category": "trading_behavior",
     "ui_visible": true
   },
@@ -181,6 +206,7 @@
     "type": "Float",
     "default": 0.05,
     "description": "指定在清算价格和止损之间放置多大的安全网，以防止头寸达到清算价格的比例。",
+    "en_description": "Specify how big of a safety net to place between the liquidation price and the stoploss, as a ratio, to prevent a position from reaching the liquidation price.",
     "category": "risk_management",
     "ui_visible": true
   },
@@ -188,6 +214,7 @@
     "type": "Object",
     "default": { "buy": 10, "sell": 30, "unit": "minutes" },
     "description": "机器人等待未完成订单完成的时间。",
+    "en_description": "The time the bot will wait for an unfilled order to be filled.",
     "category": "trading_behavior",
     "ui_visible": false
   },
@@ -204,6 +231,7 @@
       }
     },
     "description": "定义出价（买入）策略。",
+    "en_description": "Defines the bid (buy) strategy.",
     "category": "trading_behavior",
     "ui_visible": false
   },
@@ -219,6 +247,7 @@
       "ignore_roi_if_buy_signal": false
     },
     "description": "定义要价（卖出）策略。",
+    "en_description": "Defines the ask (sell) strategy.",
     "category": "trading_behavior",
     "ui_visible": false
   },
@@ -234,43 +263,51 @@
       "pair_blacklist": []
     },
     "description": "交易所配置。",
+    "en_description": "Exchange configuration.",
     "category": "exchange",
     "ui_visible": true,
     "properties": {
       "name": {
         "type": "String",
         "default": "binance",
-        "description": "交易所名称。"
+        "description": "交易所名称。",
+        "en_description": "Exchange name."
       },
       "key": {
         "type": "String",
         "default": "",
-        "description": "API密钥。"
+        "description": "API密钥。",
+        "en_description": "API key."
       },
       "secret": {
         "type": "String",
         "default": "",
-        "description": "API私钥。"
+        "description": "API私钥。",
+        "en_description": "API secret."
       },
       "ccxt_config": {
         "type": "Object",
         "default": {},
-        "description": "CCXT配置。"
+        "description": "CCXT配置。",
+        "en_description": "CCXT configuration."
       },
       "ccxt_async_config": {
         "type": "Object",
         "default": {},
-        "description": "异步CCXT配置。"
+        "description": "异步CCXT配置。",
+        "en_description": "Asynchronous CCXT configuration."
       },
       "pair_whitelist": {
         "type": "List",
         "default": ["BTC/USDT"],
-        "description": "使用 StaticPairList 时要交易的交易对列表。例如：[\"BTC/USDT\", \"ETH/USDT\"]"
+        "description": "使用 StaticPairList 时要交易的交易对列表。例如：[\"BTC/USDT\", \"ETH/USDT\"]",
+        "en_description": "List of pairs to trade when using StaticPairList. E.g., [\"BTC/USDT\", \"ETH/USDT\"]"
       },
       "pair_blacklist": {
         "type": "List",
         "default": [],
-        "description": "要从交易中排除的交易对列表。"
+        "description": "要从交易中排除的交易对列表。",
+        "en_description": "List of pairs to exclude from trading."
       }
     }
   },
@@ -278,6 +315,7 @@
     "type": "List of Dicts",
     "default": [{"method": "StaticPairList"}],
     "description": "定义要使用的交易对列表处理器。",
+    "en_description": "Defines the pairlist handlers to use.",
     "category": "pairlist",
     "ui_visible": true
   },
@@ -285,6 +323,7 @@
     "type": "Object",
     "default": {"enabled": false, "process_throttle_secs": 3600, "calculate_since_number_of_days": 7, "allowed_risk": 0.01, "stoploss_range_min": -0.01, "stoploss_range_max": -0.1, "stoploss_range_step": -0.01, "minimum_winrate": 0.6, "minimum_expectancy": 0.2, "min_trade_number": 10, "max_trade_duration_minute": 1440, "remove_pumps": false},
     "description": "边缘配置。",
+    "en_description": "Edge configuration.",
     "category": "edge",
     "ui_visible": false
   },
@@ -292,6 +331,7 @@
     "type": "Object",
     "default": {"enabled": false, "listen_ip_address": "127.0.0.1", "listen_port": 8080, "verbosity": "info", "username": "", "password": "", "jwt_secret_key": "", "CORS_origins": []},
     "description": "API服务器配置。",
+    "en_description": "API server configuration.",
     "category": "api_server",
     "ui_visible": false
   },
@@ -299,6 +339,7 @@
     "type": "Object",
     "default": {"enabled": false, "token": "", "chat_id": "", "notification_settings": {}},
     "description": "电报配置。",
+    "en_description": "Telegram configuration.",
     "category": "notifications",
     "ui_visible": false
   },
@@ -306,6 +347,7 @@
     "type": "Object",
     "default": {"enabled": false, "url": "", "allow_custom_messages": false, "webhook_entry": {"enabled": false, "url": ""}, "webhook_exit": {"enabled": false, "url": ""}, "webhook_entry_cancel": {"enabled": false, "url": ""}, "webhook_exit_cancel": {"enabled": false, "url": ""}, "webhook_entry_fill": {"enabled": false, "url": ""}, "webhook_exit_fill": {"enabled": false, "url": ""}},
     "description": "Webhook配置。",
+    "en_description": "Webhook configuration.",
     "category": "notifications",
     "ui_visible": false
   },
@@ -313,6 +355,7 @@
     "type": "String, SQLAlchemy connect string",
     "default": "sqlite:///tradesv3.dryrun.sqlite",
     "description": "声明要使用的数据库URL。注意：如果`dry_run`为`true`，则默认为`sqlite:///tradesv3.dryrun.sqlite`，对于生产实例，默认为`sqlite:///tradesv3.sqlite`。",
+    "en_description": "Declare the database URL to use. Note: If `dry_run` is `true`, this defaults to `sqlite:///tradesv3.dryrun.sqlite`, for production instances, it defaults to `sqlite:///tradesv3.sqlite`.",
     "category": "main",
     "ui_visible": false
   },
@@ -321,6 +364,7 @@
     "default": "stopped",
     "allowed_values": ["running", "paused", "stopped"],
     "description": "定义初始应用程序状态。如果设置为stopped，则必须通过`/start` RPC命令显式启动机器人。",
+    "en_description": "Defines the initial application state. If set to stopped, the bot must be explicitly started via the `/start` RPC command.",
     "category": "main",
     "ui_visible": false
   },
@@ -328,6 +372,7 @@
     "type": "Boolean",
     "default": false,
     "description": "启用通过RPC命令强制交易入场的功能。",
+    "en_description": "Enable forcing trades entry via RPC command.",
     "category": "trading_behavior",
     "ui_visible": false
   },
@@ -335,6 +380,7 @@
     "type": "ClassName",
     "default": "SampleStrategy",
     "description": "定义要使用的策略类。建议通过`--strategy NAME`设置。",
+    "en_description": "Defines the strategy class to use. Recommended to be set via `--strategy NAME`.",
     "category": "strategy",
     "ui_visible": true
   },
@@ -342,6 +388,7 @@
     "type": "String",
     "default": "user_data/strategies",
     "description": "添加额外的策略查找路径（必须是目录）。",
+    "en_description": "Add an additional strategy lookup path (must be a directory).",
     "category": "strategy",
     "ui_visible": false
   },
@@ -349,6 +396,7 @@
     "type": "Boolean",
     "default": false,
     "description": "设置为`true`以在`user_data/strategies`内的子目录中递归搜索策略。",
+    "en_description": "Set to `true` to search for strategies recursively in subdirectories within `user_data/strategies`.",
     "category": "strategy",
     "ui_visible": false
   },
@@ -356,6 +404,7 @@
     "type": "Boolean",
     "default": false,
     "description": "禁用从策略方法返回的OHLCV数据框的正确性检查。只有在故意更改数据框并了解其作用时才使用。",
+    "en_description": "Disables correctness checks of the OHLCV dataframe returned from strategy methods. Use only if you are intentionally changing the dataframe and know what you are doing.",
     "category": "data",
     "ui_visible": false
   },
@@ -364,6 +413,7 @@
     "default": "feather",
     "allowed_values": ["feather", "json", "jsongz", "hdf5"],
     "description": "用于存储历史蜡烛（OHLCV）数据的数据格式。",
+    "en_description": "Data format for storing historical candle (OHLCV) data.",
     "category": "data",
     "ui_visible": false
   },
@@ -372,6 +422,7 @@
     "default": "feather",
     "allowed_values": ["feather", "json", "jsongz", "hdf5"],
     "description": "用于存储历史交易数据的数据格式。",
+    "en_description": "Data format for storing historical trade data.",
     "category": "data",
     "ui_visible": false
   },
@@ -379,6 +430,7 @@
     "type": "Boolean",
     "default": false,
     "description": "将所有数字列重新转换为float32/int32，目的是减少ram/磁盘使用量（并减少回测/超参数优化和FreqAI中的训练/推理时间）。",
+    "en_description": "Re-converts all numeric columns to float32/int32 with the aim to reduce ram/disk usage (and reduce backtesting/hyperopt and training/inference time in FreqAI).",
     "category": "data",
     "ui_visible": false
   },
@@ -386,6 +438,7 @@
     "type": "String",
     "default": "logs/freqtrade.log",
     "description": "指定日志文件名。对10个文件使用滚动策略，每个文件的限制为1MB。",
+    "en_description": "Specifies the log filename. Uses a rolling policy for 10 files, with a limit of 1MB per file.",
     "category": "main",
     "ui_visible": false
   },
@@ -393,6 +446,7 @@
     "type": "List of strings",
     "default": [],
     "description": "额外的配置文件。这些文件将被加载并与当前配置文件合并。文件相对于初始文件解析。",
+    "en_description": "Additional configuration files. These files will be loaded and merged with the current configuration file. Files are parsed relative to the initial file.",
     "category": "main",
     "ui_visible": false
   },
@@ -422,6 +476,7 @@
       }
     },
     "description": "包含python日志记录的日志配置字典。",
+    "en_description": "Dictionary containing the logging configuration for python logging.",
     "category": "main",
     "ui_visible": false
   },
@@ -429,6 +484,7 @@
     "type": "String",
     "default": "./user_data/",
     "description": "包含用户数据的目录。",
+    "en_description": "Directory containing user data.",
     "category": "main",
     "ui_visible": false
   },
@@ -436,6 +492,7 @@
     "type": "Dict",
     "default": {"enabled": false, "producers": [], "wait_for_produtc": 0},
     "description": "启用生产者/消费者模式。",
+    "en_description": "Enable producer/consumer mode.",
     "category": "main",
     "ui_visible": false
   },
@@ -443,6 +500,7 @@
     "type": "Object",
     "default": {"block_bad_exchanges": true},
     "description": "实验性配置。",
+    "en_description": "Experimental configuration.",
     "category": "experimental",
     "ui_visible": false
   },
@@ -460,6 +518,7 @@
       "data_split_parameters": {}
     },
     "description": "FreqAI配置。",
+    "en_description": "FreqAI configuration.",
     "category": "freqai",
     "ui_visible": false
   },
@@ -467,6 +526,7 @@
     "type": "Object",
     "default": {"entry": "limit", "exit": "limit", "emergency_exit": "market", "force_entry": "market", "force_exit": "market", "stoploss": "market", "stoploss_on_exchange": false, "stoploss_on_exchange_interval": 60, "stoploss_on_exchange_limit_ratio": 0.99},
     "description": "配置取决于操作的订单类型（\"entry\", \"exit\", \"stoploss\", \"stoploss_on_exchange\"）。",
+    "en_description": "Configure order types depending on the operation (\"entry\", \"exit\", \"stoploss\", \"stoploss_on_exchange\").",
     "category": "trading_behavior",
     "ui_visible": false
   },
@@ -474,6 +534,7 @@
     "type": "Boolean",
     "default": true,
     "description": "使用策略产生的退出信号，除了`minimal_roi`。将此设置为false会禁用\"exit_long\"和\"exit_short\"列的使用。对其他退出方法（止损、ROI、回调）没有影响。",
+    "en_description": "Use exit signals produced by the strategy, in addition to `minimal_roi`. Setting this to false disables the use of the \"exit_long\" and \"exit_short\" columns. Has no effect on other exit methods (stoploss, ROI, callbacks).",
     "category": "trading_behavior",
     "ui_visible": true
   },
@@ -481,6 +542,7 @@
     "type": "Boolean",
     "default": false,
     "description": "等待机器人达到exit_profit_offset后再做退出决定。",
+    "en_description": "Wait for the bot to reach the exit_profit_offset before making an exit decision.",
     "category": "trading_behavior",
     "ui_visible": true
   },
@@ -488,6 +550,7 @@
     "type": "Float (as ratio)",
     "default": 0.0,
     "description": "退出信号仅在高于此值时有效。仅在与exit_profit_only=True结合时有效。",
+    "en_description": "Exit signals are only valid above this value. Only valid in combination with exit_profit_only=True.",
     "category": "trading_behavior",
     "ui_visible": true
   },
@@ -495,6 +558,7 @@
     "type": "Boolean",
     "default": false,
     "description": "如果入场信号仍然活跃，则不退出。此设置优先于minimal_roi和use_exit_signal。",
+    "en_description": "Do not exit if the entry signal is still active. This setting takes precedence over minimal_roi and use_exit_signal.",
     "category": "trading_behavior",
     "ui_visible": true
   },
@@ -502,6 +566,7 @@
     "type": "Integer",
     "default": 0,
     "description": "指定买信号不再使用的秒数。",
+    "en_description": "Specify the number of seconds after which a buy signal is no longer used.",
     "category": "trading_behavior",
     "ui_visible": false
   },
@@ -509,6 +574,7 @@
     "type": "Boolean",
     "default": false,
     "description": "启用策略使用头寸调整（额外的买入或卖出）。",
+    "en_description": "Enable position adjustment (additional buys or sells) to be used by the strategy.",
     "category": "trading_behavior",
     "ui_visible": true
   },
@@ -516,6 +582,7 @@
     "type": "Positive Integer or -1",
     "default": -1,
     "description": "每个开仓交易在第一个入场订单之上的最大额外订单数。设置为-1表示无限额外订单。",
+    "en_description": "The maximum number of additional orders on top of the first entry order for each open trade. Set to -1 for unlimited additional orders.",
     "category": "trading_behavior",
     "ui_visible": true
   },
@@ -523,6 +590,7 @@
     "type": "Object",
     "default": {"entry": "GTC", "exit": "GTC"},
     "description": "配置入场和出场订单的时间限制。",
+    "en_description": "Configure the time in force for entry and exit orders.",
     "category": "trading_behavior",
     "ui_visible": false
   },
@@ -530,6 +598,7 @@
     "type": "List of Strings",
     "default": [],
     "description": "允许访问机器人API的来源列表。这对于跨源请求至关重要，尤其是在使用FreqUI时。配置需要一个允许的URL列表，并且不允许使用尾部斜杠。",
+    "en_description": "List of origins allowed to access the bot's API. This is crucial for cross-origin requests, especially when using FreqUI. The configuration requires a list of allowed URLs and does not allow trailing slashes.",
     "category": "api_server",
     "ui_visible": false
   },
@@ -537,6 +606,7 @@
     "type": "String",
     "default": "",
     "description": "用于JWT令牌签名的密钥。",
+    "en_description": "The key used for JWT token signing.",
     "category": "api_server",
     "ui_visible": false
   }
