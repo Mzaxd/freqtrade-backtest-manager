@@ -40,7 +40,7 @@ const RealtimeLogViewer = ({ logSourceUrl, initialLogs }: RealtimeLogViewerProps
   }
 
   return (
-    <pre className="bg-gray-900 text-white p-4 rounded-lg text-sm overflow-auto max-h-96 whitespace-pre-wrap break-all">
+    <pre className="bg-gray-900 text-white p-4 rounded-lg text-sm overflow-auto whitespace-pre-wrap break-all h-full">
       {logs.map((log, index) => (
         <div key={index} dangerouslySetInnerHTML={{ __html: highlightCommand(log) }} />
       ))}

@@ -64,5 +64,27 @@
     "RUNNING": "运行中",
     "COMPLETED": "已完成",
     "FAILED": "失败"
+  },
+  "Backtest": {
+    "trades": "交易列表",
+    "pair": "交易对",
+    "openDate": "开仓日期",
+    "closeDate": "平仓日期",
+    "profit": "利润",
+    "profitPct": "利润率",
+    "openRate": "开仓价格",
+    "closeRate": "平仓价格",
+    "amount": "数量",
+    "stakeAmount": "投入金额",
+    "tradeDuration": "交易时长",
+    "exitReason": "退出原因",
+    "noTrades": "此回测没有找到交易记录。",
+    "filterByPair": "按交易对筛选...",
+    "filterByExitReason": "按退出原因筛选",
+    "allExitReasons": "所有退出原因",
+    "previous": "上一页",
+    "next": "下一页",
+    "page": "页",
+    "rowsPerPage": "每页行数"
   }
 }

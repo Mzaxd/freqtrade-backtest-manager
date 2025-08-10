@@ -64,5 +64,27 @@
     "RUNNING": "Running",
     "COMPLETED": "Completed",
     "FAILED": "Failed"
+  },
+  "Backtest": {
+    "trades": "Trades",
+    "pair": "Pair",
+    "openDate": "Open Date",
+    "closeDate": "Close Date",
+    "profit": "Profit",
+    "profitPct": "Profit %",
+    "openRate": "Open Rate",
+    "closeRate": "Close Rate",
+    "amount": "Amount",
+    "stakeAmount": "Stake Amount",
+    "tradeDuration": "Trade Duration",
+    "exitReason": "Exit Reason",
+    "noTrades": "No trades found for this backtest.",
+    "filterByPair": "Filter by pair...",
+    "filterByExitReason": "Filter by exit reason",
+    "allExitReasons": "All Exit Reasons",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "rowsPerPage": "Rows per page"
   }
 }

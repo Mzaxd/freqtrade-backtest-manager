@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SummaryMetricsCard } from "@/components/SummaryMetricsCard"
 import { RefreshCw, Image } from 'lucide-react'
 import { useState } from 'react'
+import { TradesTable } from "@/components/TradesTable";
 
 interface BacktestTask {
   id: string
@@ -27,10 +28,20 @@ interface BacktestTask {
   config: {
     name: string
   }
+  trades: any[];
+  tradesCount: number;
+  exitReasons: string[];
 }
 
-async function getBacktest(id: string) {
-  const response = await fetch(`/api/backtests/${id}`)
+async function getBacktest(id: string, page: number, limit: number, sortBy: string, sortOrder: string, filters: Record<string, any>) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    sortBy,
+    sortOrder,
+    ...filters,
+  });
+  const response = await fetch(`/api/backtests/${id}?${params.toString()}`)
   if (!response.ok) {
     throw new Error('Failed to fetch backtest')
   }
@@ -42,10 +53,16 @@ export default function BacktestDetailPage() {
   const id = params.id as string
   const queryClient = useQueryClient()
   const [isPlotting, setIsPlotting] = useState(false)
+  const [activeTab, setActiveTab] = useState("overview");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sortBy, setSortBy] = useState('open_date');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [filters, setFilters] = useState({});
 
   const { data: backtest, isLoading, error } = useQuery({
-    queryKey: ['backtest', id],
-    queryFn: () => getBacktest(id),
+    queryKey: ['backtest', id, page, limit, sortBy, sortOrder, filters],
+    queryFn: () => getBacktest(id, page, limit, sortBy, sortOrder, filters),
     refetchInterval: (query: any) => {
       const data = query.state.data as BacktestTask | undefined
       if (data?.status === 'RUNNING' || data?.status === 'PENDING') {
@@ -138,11 +155,12 @@ export default function BacktestDetailPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="justify-start">
           <TabsTrigger value="overview">概览</TabsTrigger>
           <TabsTrigger value="analysis">交易分析</TabsTrigger>
           <TabsTrigger value="logs">日志</TabsTrigger>
+          <TabsTrigger value="trades">交易列表</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -248,13 +266,30 @@ export default function BacktestDetailPage() {
           )}
         </TabsContent>
 
+        <TabsContent value="trades" className="mt-4">
+          <TradesTable
+            trades={backtest.trades || []}
+            tradesCount={backtest.tradesCount || 0}
+            page={page}
+            limit={limit}
+            onPageChange={setPage}
+            onLimitChange={setLimit}
+            onSortChange={(newSortBy, newSortOrder) => {
+              setSortBy(newSortBy);
+              setSortOrder(newSortOrder);
+            }}
+            onFilterChange={setFilters}
+            exitReasons={backtest.exitReasons || []}
+          />
+        </TabsContent>
+
         <TabsContent value="logs" className="mt-4">
           {showLogs ? (
             <Card>
               <CardHeader>
                 <CardTitle>日志</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="h-[75vh] overflow-y-auto">
                 <RealtimeLogViewer
                   logSourceUrl={`/api/backtests/${id}/logs`}
                   initialLogs={backtest.logs}
@@ -266,6 +301,7 @@ export default function BacktestDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
     </div>
   )
 }
