@@ -1,0 +1,50 @@
+# 使用 Node.js 20 作为基础镜像
+FROM node:20-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 安装系统依赖
+RUN apk add --no-cache \
+    git \
+    curl \
+    python3 \
+    make \
+    g++ \
+    bash \
+    wget \
+    ca-certificates
+
+# 安装 Docker CLI (用于管理 freqtrade 容器)
+RUN apk add --no-cache docker-cli
+
+# 复制 package.json 和 pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml ./
+
+# 安装 pnpm
+RUN npm install -g pnpm
+
+# 安装依赖
+RUN pnpm install
+
+# 复制源代码
+COPY . .
+
+# 生成 Prisma 客户端
+RUN pnpm db:generate
+
+# 构建应用
+RUN pnpm build
+
+# 创建必要的目录
+RUN mkdir -p /app/user_data /app/data /app/logs
+
+# 设置启动脚本
+COPY start-allinone.sh /app/start-allinone.sh
+RUN chmod +x /app/start-allinone.sh
+
+# 暴露端口
+EXPOSE 5173 5432 6379
+
+# 启动命令
+CMD ["/app/start-allinone.sh"]

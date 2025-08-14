@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # All-in-One Freqtrade Backtest Manager
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.allinone
+    container_name: freqtrade-backtest-manager-allinone
+    ports:
+      - "5173:5173"      # Web 应用
+      - "5432:5432"      # PostgreSQL (可选，用于外部连接)
+      - "6379:6379"      # Redis (可选，用于外部连接)
+    environment:
+      - POSTGRES_USER=freqtrade
+      - POSTGRES_PASSWORD=freqtrade_password
+      - POSTGRES_DB=freqtrade_db
+      - DATABASE_URL=postgresql://freqtrade:freqtrade_password@localhost:5432/freqtrade_db
+      - REDIS_URL=redis://localhost:6379
+      - FREQTRADE_PATH=docker run --rm -v /app/user_data:/freqtrade/user_data freqtradeorg/freqtrade:stable
+      - FREQTRADE_USER_DATA_PATH=/app/user_data
+      - FREQTRADE_CONTAINER_USER_DATA_PATH=/freqtrade/user_data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - redis_data:/data
+      - user_data:/app/user_data
+      - data:/app/data
+      - logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock  # 用于管理 Docker 容器
+    networks:
+      - freqtrade-network
+    restart: unless-stopped
+    privileged: true  # 需要 Docker 权限
+
+  # Freqtrade 容器 (可选，用于直接运行 freqtrade)
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable
+    container_name: freqtrade
+    volumes:
+      - user_data:/freqtrade/user_data
+    networks:
+      - freqtrade-network
+    profiles:
+      - freqtrade
+
+volumes:
+  postgres_data:
+  redis_data:
+  user_data:
+  data:
+  logs:
+
+networks:
+  freqtrade-network:
+    driver: bridge

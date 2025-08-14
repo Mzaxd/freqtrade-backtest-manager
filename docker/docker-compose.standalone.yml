@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Freqtrade Backtest Manager App
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    container_name: freqtrade-backtest-manager
+    ports:
+      - "5173:5173"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379
+      - FREQTRADE_PATH=${FREQTRADE_PATH}
+      - FREQTRADE_USER_DATA_PATH=${FREQTRADE_USER_DATA_PATH}
+      - FREQTRADE_CONTAINER_USER_DATA_PATH=${FREQTRADE_CONTAINER_USER_DATA_PATH}
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./data:/app/data
+      - ./user_data:/app/user_data
+    networks:
+      - freqtrade-network
+    restart: unless-stopped
+
+  # Worker Process
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    container_name: freqtrade-backtest-worker
+    command: pnpm worker
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379
+      - FREQTRADE_PATH=${FREQTRADE_PATH}
+      - FREQTRADE_USER_DATA_PATH=${FREQTRADE_USER_DATA_PATH}
+      - FREQTRADE_CONTAINER_USER_DATA_PATH=${FREQTRADE_CONTAINER_USER_DATA_PATH}
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./data:/app/data
+      - ./user_data:/app/user_data
+    networks:
+      - freqtrade-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: freqtrade-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./prisma/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - freqtrade-network
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: freqtrade-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - freqtrade-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  freqtrade-network:
+    driver: bridge
