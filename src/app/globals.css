@@ -45,71 +45,71 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: rgb(250, 249, 245);
+  --foreground: rgb(20, 20, 19);
+  --card: rgb(255, 255, 255);
+  --card-foreground: rgb(20, 20, 19);
+  --popover: rgb(255, 255, 255);
+  --popover-foreground: rgb(20, 20, 19);
+  --primary: rgb(255, 255, 255);
+  --primary-foreground: rgb(20, 20, 19);
+  --secondary: rgb(245, 243, 237);
+  --secondary-foreground: rgb(20, 20, 19);
+  --muted: rgb(245, 243, 237);
+  --muted-foreground: rgb(113, 113, 112);
+  --accent: rgb(245, 243, 237);
+  --accent-foreground: rgb(20, 20, 19);
+  --destructive: rgb(220, 38, 38);
+  --border: rgb(229, 227, 221);
+  --input: rgb(255, 255, 255);
+  --ring: rgb(20, 20, 19);
+  --chart-1: rgb(34, 197, 94);
+  --chart-2: rgb(59, 130, 246);
+  --chart-3: rgb(251, 191, 36);
+  --chart-4: rgb(239, 68, 68);
+  --chart-5: rgb(168, 85, 247);
+  --sidebar: rgb(250, 249, 245);
+  --sidebar-foreground: rgb(20, 20, 19);
+  --sidebar-primary: rgb(245, 243, 237);
+  --sidebar-primary-foreground: rgb(20, 20, 19);
+  --sidebar-accent: rgb(245, 243, 237);
+  --sidebar-accent-foreground: rgb(20, 20, 19);
+  --sidebar-border: rgb(229, 227, 221);
+  --sidebar-ring: rgb(20, 20, 19);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: rgb(20, 20, 19);
+  --foreground: rgb(250, 249, 245);
+  --card: rgb(33, 33, 32);
+  --card-foreground: rgb(250, 249, 245);
+  --popover: rgb(33, 33, 32);
+  --popover-foreground: rgb(250, 249, 245);
+  --primary: rgb(250, 249, 245);
+  --primary-foreground: rgb(20, 20, 19);
+  --secondary: rgb(66, 66, 65);
+  --secondary-foreground: rgb(250, 249, 245);
+  --muted: rgb(66, 66, 65);
+  --muted-foreground: rgb(180, 179, 177);
+  --accent: rgb(66, 66, 65);
+  --accent-foreground: rgb(250, 249, 245);
+  --destructive: rgb(248, 113, 113);
+  --border: rgb(66, 66, 65);
+  --input: rgb(33, 33, 32);
+  --ring: rgb(250, 249, 245);
+  --chart-1: rgb(34, 197, 94);
+  --chart-2: rgb(59, 130, 246);
+  --chart-3: rgb(251, 191, 36);
+  --chart-4: rgb(239, 68, 68);
+  --chart-5: rgb(168, 85, 247);
+  --sidebar: rgb(20, 20, 19);
+  --sidebar-foreground: rgb(250, 249, 245);
+  --sidebar-primary: rgb(66, 66, 65);
+  --sidebar-primary-foreground: rgb(250, 249, 245);
+  --sidebar-accent: rgb(66, 66, 65);
+  --sidebar-accent-foreground: rgb(250, 249, 245);
+  --sidebar-border: rgb(66, 66, 65);
+  --sidebar-ring: rgb(250, 249, 245);
 }
 
 @layer base {
@@ -118,5 +118,92 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  
+  h1 {
+    font-size: 2.25rem;
+    line-height: 1.2;
+  }
+  
+  h2 {
+    font-size: 1.875rem;
+    line-height: 1.2;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+  
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+  
+  .prose {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 400;
+  }
+}
+
+@layer components {
+  .btn-claude {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive;
+  }
+  
+  .btn-claude-primary {
+    @apply bg-white text-black border border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-claude-secondary {
+    @apply bg-gray-100 text-black border border-gray-200 hover:bg-gray-200;
+  }
+  
+  .btn-claude-ghost {
+    @apply bg-transparent text-black hover:bg-gray-100;
+  }
+  
+  .card-claude {
+    @apply bg-white text-black rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .input-claude {
+    @apply flex h-9 w-full rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-black disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  
+  .badge-claude {
+    @apply inline-flex items-center rounded-md border border-gray-200 px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2;
+  }
+  
+  .badge-claude-default {
+    @apply bg-gray-100 text-black;
+  }
+  
+  .badge-claude-success {
+    @apply bg-green-100 text-green-800 border-green-200;
+  }
+  
+  .badge-claude-warning {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+  }
+  
+  .badge-claude-error {
+    @apply bg-red-100 text-red-800 border-red-200;
   }
 }

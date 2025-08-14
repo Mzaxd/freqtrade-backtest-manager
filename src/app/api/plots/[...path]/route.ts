@@ -7,9 +7,10 @@ const readFile = promisify(fs.readFile);
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const plotPath = params.path.join('/');
+  const { path: pathSegments } = await params;
+  const plotPath = pathSegments.join('/');
   const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || './ft_user_data';
   const filePath = path.join(userDataPath, 'plots', plotPath);
 

@@ -50,10 +50,11 @@ const deepMerge = <T extends object, U extends object>(target: T, source: U): T 
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const idNum = parseInt(params.id, 10);
+    const { id } = await params;
+    const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
       return NextResponse.json({ error: '无效的 ID 格式' }, { status: 400 });
     }
@@ -85,10 +86,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const idNum = parseInt(params.id, 10);
+    const { id } = await params;
+    const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
       return NextResponse.json({ error: '无效的 ID 格式' }, { status: 400 });
     }
@@ -175,10 +177,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const idNum = parseInt(params.id, 10);
+    const { id } = await params;
+    const idNum = parseInt(id, 10);
     if (isNaN(idNum)) {
       return NextResponse.json({ error: '无效的 ID 格式' }, { status: 400 });
     }

@@ -5,11 +5,12 @@ import { Prisma } from '@prisma/client'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     const backtest = await prisma.backtestTask.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!backtest) {
@@ -21,7 +22,7 @@ export async function POST(
 
     // Reset the backtest status
     const updatedBacktest = await prisma.backtestTask.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         status: 'PENDING',
         completedAt: null,

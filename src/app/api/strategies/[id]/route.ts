@@ -11,9 +11,10 @@ const getStrategiesPath = () => {
 
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const strategyId = parseInt(context.params.id)
+  const { id } = await context.params;
+  const strategyId = parseInt(id)
   if (isNaN(strategyId)) {
     return NextResponse.json({ error: '无效的策略 ID' }, { status: 400 })
   }

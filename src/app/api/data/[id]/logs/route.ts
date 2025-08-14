@@ -5,15 +5,16 @@ const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const encoder = new TextEncoder()
     
     const stream = new ReadableStream({
       start(controller) {
         const subscriber = redis.duplicate()
-        const channel = `logs:${params.id}`
+        const channel = `logs:${id}`
         
         subscriber.subscribe(channel, (err) => {
           if (err) {

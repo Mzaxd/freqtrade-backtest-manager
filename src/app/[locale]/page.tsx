@@ -2,10 +2,11 @@ import {unstable_setRequestLocale} from 'next-intl/server';
 import {redirect} from '@/navigation';
  
 type Props = {
-  params: {locale: string};
+  params: Promise<{locale: string}>;
 };
  
-export default function RootPage({params}: Props) {
-  unstable_setRequestLocale(params.locale);
+export default async function RootPage({params}: Props) {
+  const {locale} = await params;
+  unstable_setRequestLocale(locale);
   redirect('/dashboard');
 }

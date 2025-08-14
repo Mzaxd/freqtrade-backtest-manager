@@ -137,19 +137,19 @@ export default function Dashboard() {
             <div className="space-y-4">
               <a
                 href="/backtests/new"
-                className="block w-full px-4 py-2 bg-blue-600 text-white rounded-md text-center hover:bg-blue-700"
+                className="block w-full px-4 py-2 bg-white text-black border border-gray-200 rounded-md text-center hover:bg-gray-50 shadow-sm hover:shadow-md transition-all duration-200"
               >
                 {t('new_backtest')}
               </a>
               <a
                 href="/strategies"
-                className="block w-full px-4 py-2 bg-gray-600 text-white rounded-md text-center hover:bg-gray-700"
+                className="block w-full px-4 py-2 bg-gray-100 text-black border border-gray-200 rounded-md text-center hover:bg-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
               >
                 {t('manage_strategies')}
               </a>
               <a
                 href="/configs"
-                className="block w-full px-4 py-2 bg-gray-600 text-white rounded-md text-center hover:bg-gray-700"
+                className="block w-full px-4 py-2 bg-gray-100 text-black border border-gray-200 rounded-md text-center hover:bg-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
               >
                 {t('manage_configs')}
               </a>

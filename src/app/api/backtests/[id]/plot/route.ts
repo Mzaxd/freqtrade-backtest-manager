@@ -4,9 +4,10 @@ import { plotQueue } from '@/lib/queue'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const taskId = params.id
+  const { id } = await params;
+  const taskId = id
   console.log(`[PLOT API] Received request for task: ${taskId}`);
 
   try {

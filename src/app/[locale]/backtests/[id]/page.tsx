@@ -133,23 +133,24 @@ export default function BacktestDetailPage() {
     )
   }
 
-  const showLogs = ['RUNNING', 'PENDING'].includes(backtest.status) || !!backtest.logs
+  const typedBacktest = backtest as BacktestTask
+  const showLogs = ['RUNNING', 'PENDING'].includes(typedBacktest.status) || !!typedBacktest.logs
 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">{backtest.name}</h1>
+        <h1 className="text-3xl font-bold mb-2">{typedBacktest.name}</h1>
         <div className="flex items-center space-x-4">
           <span className={`px-2 py-1 rounded text-sm ${
-            backtest.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-            backtest.status === 'FAILED' ? 'bg-red-100 text-red-800' :
-            backtest.status === 'RUNNING' ? 'bg-blue-100 text-blue-800' :
+            typedBacktest.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+            typedBacktest.status === 'FAILED' ? 'bg-red-100 text-red-800' :
+            typedBacktest.status === 'RUNNING' ? 'bg-blue-100 text-blue-800' :
             'bg-yellow-100 text-yellow-800'
           }`}>
-            {backtest.status}
+            {typedBacktest.status}
           </span>
           <span className="text-sm text-gray-600">
-            {t('createdAt')}: {format(new Date(backtest.createdAt), 'PPpp')}
+            {t('createdAt')}: {format(new Date(typedBacktest.createdAt), 'PPpp')}
           </span>
           <Button onClick={handleRetry} disabled={retryMutation.isPending} size="sm" variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -176,25 +177,25 @@ export default function BacktestDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">{t('basicInfo.strategy')}</p>
-                    <p className="font-medium">{backtest.strategy.className}</p>
+                    <p className="font-medium">{typedBacktest.strategy.className}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">{t('basicInfo.config')}</p>
-                    <p className="font-medium">{backtest.config.name}</p>
+                    <p className="font-medium">{typedBacktest.config.name}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">{t('basicInfo.startTime')}</p>
-                    <p className="font-medium">{format(new Date(backtest.timerangeStart), 'PP')}</p>
+                    <p className="font-medium">{format(new Date(typedBacktest.timerangeStart), 'PP')}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">{t('basicInfo.endTime')}</p>
-                    <p className="font-medium">{format(new Date(backtest.timerangeEnd), 'PP')}</p>
+                    <p className="font-medium">{format(new Date(typedBacktest.timerangeEnd), 'PP')}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {backtest.resultsSummary && (
+            {typedBacktest.resultsSummary && (
               <Card>
                 <CardHeader>
                   <CardTitle>{t('results.title')}</CardTitle>
@@ -203,40 +204,40 @@ export default function BacktestDetailPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">{t('results.totalTrades')}</p>
-                      <p className="text-2xl font-bold">{backtest.resultsSummary.total_trades || 0}</p>
+                      <p className="text-2xl font-bold">{typedBacktest.resultsSummary.total_trades || 0}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">{t('results.totalProfit')}</p>
-                      <p className="text-2xl font-bold">{backtest.resultsSummary.profit_total || 0}</p>
+                      <p className="text-2xl font-bold">{typedBacktest.resultsSummary.profit_total || 0}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">{t('results.profitRate')}</p>
-                      <p className="text-2xl font-bold">{backtest.resultsSummary.profit_total_abs || 0}%</p>
+                      <p className="text-2xl font-bold">{typedBacktest.resultsSummary.profit_total_abs || 0}%</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">{t('results.winRate')}</p>
-                      <p className="text-2xl font-bold">{backtest.resultsSummary.wins || 0} / {backtest.resultsSummary.total_trades || 0}</p>
+                      <p className="text-2xl font-bold">{typedBacktest.resultsSummary.wins || 0} / {typedBacktest.resultsSummary.total_trades || 0}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {backtest.resultsSummary && (
-              <SummaryMetricsCard results={backtest.resultsSummary} />
+            {typedBacktest.resultsSummary && (
+              <SummaryMetricsCard results={typedBacktest.resultsSummary} />
             )}
           </div>
         </TabsContent>
 
         <TabsContent value="analysis" className="mt-4">
-          {backtest.plotProfitUrl ? (
+          {typedBacktest.plotProfitUrl ? (
             <Card>
               <CardHeader>
                 <CardTitle>Profit Plot</CardTitle>
               </CardHeader>
               <CardContent>
                 <iframe
-                  src={backtest.plotProfitUrl}
+                  src={typedBacktest.plotProfitUrl}
                   className="w-full h-[800px] border-0"
                   title="Profit Plot"
                 />
@@ -248,7 +249,7 @@ export default function BacktestDetailPage() {
                 <CardTitle>{t('analysis.title')}</CardTitle>
               </CardHeader>
               <CardContent>
-                {backtest.status === 'COMPLETED' ? (
+                {typedBacktest.status === 'COMPLETED' ? (
                   <div>
                     <p className="mb-4">{t('analysis.noChart')}</p>
                     <Button onClick={handleGeneratePlot} disabled={isPlotting || plotMutation.isPending}>
@@ -271,8 +272,8 @@ export default function BacktestDetailPage() {
 
         <TabsContent value="trades" className="mt-4">
           <TradesTable
-            trades={backtest.trades || []}
-            tradesCount={backtest.tradesCount || 0}
+            trades={typedBacktest.trades || []}
+            tradesCount={typedBacktest.tradesCount || 0}
             page={page}
             limit={limit}
             onPageChange={setPage}
@@ -282,7 +283,7 @@ export default function BacktestDetailPage() {
               setSortOrder(newSortOrder);
             }}
             onFilterChange={setFilters}
-            exitReasons={backtest.exitReasons || []}
+            exitReasons={typedBacktest.exitReasons || []}
           />
         </TabsContent>
 
@@ -295,7 +296,7 @@ export default function BacktestDetailPage() {
               <CardContent className="h-[75vh] overflow-y-auto">
                 <RealtimeLogViewer
                   logSourceUrl={`/api/backtests/${id}/logs`}
-                  initialLogs={backtest.logs}
+                  initialLogs={typedBacktest.logs}
                 />
               </CardContent>
             </Card>

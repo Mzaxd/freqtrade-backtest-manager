@@ -33,9 +33,10 @@ interface Trade {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
@@ -45,7 +46,7 @@ export async function GET(
     const exitReason = searchParams.get('exitReason');
 
     const backtest = await prisma.backtestTask.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         strategy: true,
         config: true,
@@ -160,11 +161,12 @@ export async function GET(
 
 export async function HEAD(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const backtest = await prisma.backtestTask.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     })
 
     if (!backtest) {
@@ -179,11 +181,12 @@ export async function HEAD(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.backtestTask.delete({
-      where: { id: params.id },
+      where: { id: id },
     })
     return new NextResponse(null, { status: 204 })
   } catch (error: any) {
