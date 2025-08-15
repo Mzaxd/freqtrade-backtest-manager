@@ -3,10 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Upload, Trash2 } from 'lucide-react'
+import { Upload, Trash2, Edit, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import StrategyEditor from '@/components/strategy-editor'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +41,9 @@ async function deleteStrategy(id: number): Promise<any> {
 export default function StrategiesPage() {
   const t = useTranslations('StrategyManagement')
   const queryClient = useQueryClient()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedStrategy, setSelectedStrategy] = useState<any>(null)
 
   const { data: strategies, isLoading } = useQuery({
@@ -52,7 +55,7 @@ export default function StrategiesPage() {
     mutationFn: deleteStrategy,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['strategies'] })
-      setIsDialogOpen(false)
+      setIsDeleteDialogOpen(false)
       setSelectedStrategy(null)
     },
   })
@@ -77,6 +80,42 @@ export default function StrategiesPage() {
     }
   }
 
+  const handleSaveStrategy = async (content: string) => {
+    const response = await fetch(`/api/strategies/${selectedStrategy.id}/content`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content }),
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Failed to save strategy')
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ['strategies'] })
+  }
+
+  const handleCreateStrategy = async (filename: string, content: string) => {
+    const formData = new FormData()
+    const blob = new Blob([content], { type: 'text/plain' })
+    const file = new File([blob], filename, { type: 'text/plain' })
+    formData.append('file', file)
+    
+    const response = await fetch('/api/strategies', {
+      method: 'POST',
+      body: formData,
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Failed to create strategy')
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ['strategies'] })
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
@@ -96,18 +135,24 @@ export default function StrategiesPage() {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <Button asChild>
-          <label className="cursor-pointer">
-            <Upload className="w-4 h-4 mr-2" />
-            {t('uploadStrategy')}
-            <input
-              type="file"
-              accept=".py"
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-          </label>
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            新建策略
+          </Button>
+          <Button asChild>
+            <label className="cursor-pointer">
+              <Upload className="w-4 h-4 mr-2" />
+              {t('uploadStrategy')}
+              <input
+                type="file"
+                accept=".py"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </label>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -116,25 +161,37 @@ export default function StrategiesPage() {
             <CardHeader>
               <CardTitle className="text-lg flex justify-between items-center">
                 {strategy.className}
-                 <AlertDialog open={isDialogOpen && selectedStrategy?.id === strategy.id} onOpenChange={(open) => {
-                   if (!open) {
-                     setSelectedStrategy(null)
-                     setIsDialogOpen(false)
-                   }
-                 }}>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        setSelectedStrategy(strategy)
-                        setIsDialogOpen(true)
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </AlertDialogTrigger>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                    onClick={() => {
+                      setSelectedStrategy(strategy)
+                      setIsEditDialogOpen(true)
+                    }}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog open={isDeleteDialogOpen && selectedStrategy?.id === strategy.id} onOpenChange={(open) => {
+                    if (!open) {
+                      setSelectedStrategy(null)
+                      setIsDeleteDialogOpen(false)
+                    }
+                  }}>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          setSelectedStrategy(strategy)
+                          setIsDeleteDialogOpen(true)
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
@@ -155,6 +212,7 @@ export default function StrategiesPage() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -180,6 +238,25 @@ export default function StrategiesPage() {
           </Card>
         ))}
       </div>
+
+      <StrategyEditor
+        strategy={selectedStrategy}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false)
+          setSelectedStrategy(null)
+        }}
+        onSave={handleSaveStrategy}
+      />
+      <StrategyEditor
+        strategy={null}
+        isOpen={isCreateDialogOpen}
+        mode="create"
+        onClose={() => {
+          setIsCreateDialogOpen(false)
+        }}
+        onCreate={handleCreateStrategy}
+      />
     </div>
   )
 }

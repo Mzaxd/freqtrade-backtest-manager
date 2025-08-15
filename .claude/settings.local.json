@@ -13,7 +13,11 @@
       "Bash(pnpx tsc:*)",
       "Bash(pnpm exec tsc:*)",
       "Bash(pnpm lint:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm db:generate:*)"
     ],
     "defaultMode": "acceptEdits"
   }
