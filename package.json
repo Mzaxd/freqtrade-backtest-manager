@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 5173",
+    "dev": "next dev --turbo --port 5173",
+    "dev:fast": "next dev --turbo --port 5173",
+    "dev:legacy": "next dev --port 5173",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

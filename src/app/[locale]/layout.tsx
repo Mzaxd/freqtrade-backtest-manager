@@ -9,6 +9,8 @@ import { getMessages, unstable_setRequestLocale } from 'next-intl/server'
 import { Navigation } from '@/components/Navigation'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { ThemeSwitcher } from '@/components/ThemeSwitcher'
+import { RouteLoadingIndicator } from '@/components/RouteLoadingIndicator'
+import { PageTransition } from '@/components/PageTransition'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -42,6 +44,7 @@ export default async function RootLayout({children, params}: Props) {
           <NextIntlClientProvider locale={locale} messages={messages}>
             <ReactQueryProvider>
               <Toaster />
+              <RouteLoadingIndicator />
               <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 <nav className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
                   <div className="container mx-auto px-4 py-4">
@@ -54,7 +57,9 @@ export default async function RootLayout({children, params}: Props) {
                     </div>
                   </div>
                 </nav>
-                <main>{children}</main>
+                <main>
+                  <PageTransition>{children}</PageTransition>
+                </main>
               </div>
             </ReactQueryProvider>
           </NextIntlClientProvider>
