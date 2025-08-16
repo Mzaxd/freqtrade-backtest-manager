@@ -13,6 +13,13 @@ export async function GET() {
     console.log('[DEBUG] 尝试获取策略列表...');
     const strategies = await prisma.strategy.findMany({
       orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: {
+            hyperoptTasks: true,
+          },
+        },
+      },
     });
     console.log('[DEBUG] 成功获取策略列表，数量:', strategies.length);
     return NextResponse.json({

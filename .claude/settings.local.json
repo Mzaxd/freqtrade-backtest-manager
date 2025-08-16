@@ -18,7 +18,14 @@
       "mcp__context7__get-library-docs",
       "Bash(pnpm add:*)",
       "Bash(pnpm db:generate:*)",
-      "Bash(pnpm dev:*)"
+      "Bash(pnpm dev:*)",
+      "Bash(rm:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm db:migrate:*)",
+      "Bash(pnpm db:push:*)",
+      "Bash(grep:*)",
+      "Bash(timeout:*)",
+      "Bash(pnpm update:*)"
     ],
     "defaultMode": "acceptEdits"
   }

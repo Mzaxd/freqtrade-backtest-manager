@@ -3,10 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Upload, Trash2, Edit, Plus } from 'lucide-react'
+import { Upload, Trash2, Edit, Plus, Zap } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import StrategyEditor from '@/components/strategy-editor'
 import {
   AlertDialog,
@@ -40,6 +41,7 @@ async function deleteStrategy(id: number): Promise<any> {
 
 export default function StrategiesPage() {
   const t = useTranslations('StrategyManagement')
+  const router = useRouter()
   const queryClient = useQueryClient()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -233,6 +235,23 @@ export default function StrategiesPage() {
                     {format(new Date(strategy.createdAt), 'PP')}
                   </span>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Hyperopt:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {strategy._count?.hyperoptTasks || 0} 个任务
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => router.push(`/hyperopts?strategy=${strategy.id}`)}
+                    >
+                      <Zap className="w-4 h-4 mr-1" />
+                      查看
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -255,6 +274,7 @@ export default function StrategiesPage() {
         onClose={() => {
           setIsCreateDialogOpen(false)
         }}
+        onSave={handleSaveStrategy}
         onCreate={handleCreateStrategy}
       />
     </div>

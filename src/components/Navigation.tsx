@@ -12,11 +12,12 @@ export function Navigation() {
   const [loadingLink, setLoadingLink] = useState<string | null>(null);
 
   const navItems = [
-    { href: '/dashboard', label: t('dashboard') },
-    { href: '/backtests', label: t('backtest_history') },
-    { href: '/strategies', label: t('strategy_management') },
-    { href: '/configs', label: t('config_management') },
-    { href: '/data', label: t('data_management') },
+    { href: '/dashboard' as const, label: t('dashboard') },
+    { href: '/backtests' as const, label: t('backtest_history') },
+    { href: '/hyperopts' as const, label: t('hyperopt_history') },
+    { href: '/strategies' as const, label: t('strategy_management') },
+    { href: '/configs' as const, label: t('config_management') },
+    { href: '/data' as const, label: t('data_management') },
   ];
 
   const isActive = (href: string) => {

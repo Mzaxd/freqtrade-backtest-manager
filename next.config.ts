@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
-import withNextIntl from 'next-intl/plugin';
+import createNextIntlPlugin from 'next-intl/plugin';
 
-const withIntl = withNextIntl('./src/i18n.ts');
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   turbopack: {},
@@ -15,4 +15,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withIntl(nextConfig);
+export default withNextIntl(nextConfig);

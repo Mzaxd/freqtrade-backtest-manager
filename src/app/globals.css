@@ -79,37 +79,37 @@
 }
 
 .dark {
-  --background: rgb(20, 20, 19);
-  --foreground: rgb(250, 249, 245);
-  --card: rgb(33, 33, 32);
-  --card-foreground: rgb(250, 249, 245);
-  --popover: rgb(33, 33, 32);
-  --popover-foreground: rgb(250, 249, 245);
-  --primary: rgb(250, 249, 245);
-  --primary-foreground: rgb(20, 20, 19);
-  --secondary: rgb(66, 66, 65);
-  --secondary-foreground: rgb(250, 249, 245);
-  --muted: rgb(66, 66, 65);
-  --muted-foreground: rgb(180, 179, 177);
-  --accent: rgb(66, 66, 65);
-  --accent-foreground: rgb(250, 249, 245);
-  --destructive: rgb(248, 113, 113);
-  --border: rgb(66, 66, 65);
-  --input: rgb(33, 33, 32);
-  --ring: rgb(250, 249, 245);
+  --background: rgb(18, 18, 18);
+  --foreground: rgb(245, 245, 245);
+  --card: rgb(28, 28, 28);
+  --card-foreground: rgb(245, 245, 245);
+  --popover: rgb(28, 28, 28);
+  --popover-foreground: rgb(245, 245, 245);
+  --primary: rgb(245, 245, 245);
+  --primary-foreground: rgb(18, 18, 18);
+  --secondary: rgb(45, 45, 45);
+  --secondary-foreground: rgb(245, 245, 245);
+  --muted: rgb(38, 38, 38);
+  --muted-foreground: rgb(163, 163, 163);
+  --accent: rgb(52, 52, 52);
+  --accent-foreground: rgb(245, 245, 245);
+  --destructive: rgb(239, 68, 68);
+  --border: rgb(45, 45, 45);
+  --input: rgb(38, 38, 38);
+  --ring: rgb(59, 130, 246);
   --chart-1: rgb(34, 197, 94);
   --chart-2: rgb(59, 130, 246);
   --chart-3: rgb(251, 191, 36);
   --chart-4: rgb(239, 68, 68);
   --chart-5: rgb(168, 85, 247);
-  --sidebar: rgb(20, 20, 19);
-  --sidebar-foreground: rgb(250, 249, 245);
-  --sidebar-primary: rgb(66, 66, 65);
-  --sidebar-primary-foreground: rgb(250, 249, 245);
-  --sidebar-accent: rgb(66, 66, 65);
-  --sidebar-accent-foreground: rgb(250, 249, 245);
-  --sidebar-border: rgb(66, 66, 65);
-  --sidebar-ring: rgb(250, 249, 245);
+  --sidebar: rgb(18, 18, 18);
+  --sidebar-foreground: rgb(245, 245, 245);
+  --sidebar-primary: rgb(28, 28, 28);
+  --sidebar-primary-foreground: rgb(245, 245, 245);
+  --sidebar-accent: rgb(45, 45, 45);
+  --sidebar-accent-foreground: rgb(245, 245, 245);
+  --sidebar-border: rgb(45, 45, 45);
+  --sidebar-ring: rgb(59, 130, 246);
 }
 
 @layer base {

@@ -29,7 +29,7 @@ async function findLatestBacktestResult(resultsDir: string): Promise<string | nu
   }
 }
 
-export async function processBacktest(taskId: string) {
+export async function processBacktest(taskId: string, overrideParams?: any) {
   try {
     // 更新任务状态为 RUNNING
     await prisma.backtestTask.update({
@@ -57,6 +57,7 @@ export async function processBacktest(taskId: string) {
     const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || path.join(process.cwd(), 'ft_user_data');
     const containerUserDataPath = process.env.FREQTRADE_CONTAINER_USER_DATA_PATH || '/freqtrade/user_data';
 
+    // 基础参数
     const args = [
       ...baseArgs,
       'backtesting',
@@ -67,6 +68,27 @@ export async function processBacktest(taskId: string) {
       '--export', 'trades',
       '--cache', 'none',
     ]
+
+    // 处理参数覆盖
+    if (overrideParams) {
+      // 创建临时配置文件
+      const tempConfigPath = path.join(userDataPath, 'temp_configs', `backtest-${taskId}-config.json`)
+      const { mkdir, writeFile } = await import('fs/promises')
+      
+      await mkdir(path.join(userDataPath, 'temp_configs'), { recursive: true })
+      
+      // 读取原始配置
+      const originalConfig = task.config?.data as Record<string, any> || {}
+      const mergedConfig = { ...originalConfig, ...overrideParams }
+      
+      await writeFile(tempConfigPath, JSON.stringify(mergedConfig, null, 2))
+      
+      // 替换配置参数
+      const configIndex = args.findIndex(arg => arg === '--config')
+      if (configIndex !== -1) {
+        args[configIndex + 1] = path.posix.join(containerUserDataPath, 'temp_configs', `backtest-${taskId}-config.json`)
+      }
+    }
 
     console.log(`Executing: ${command} ${args.join(' ')}`);
 
@@ -97,6 +119,17 @@ export async function processBacktest(taskId: string) {
     })
 
     const fullLogs = logs.join('\n')
+
+    // 清理临时文件
+    if (overrideParams) {
+      try {
+        const { unlink } = await import('fs/promises')
+        const tempConfigPath = path.join(userDataPath, 'temp_configs', `backtest-${taskId}-config.json`)
+        await unlink(tempConfigPath)
+      } catch (cleanupError) {
+        console.warn(`Failed to clean up temporary config file: ${cleanupError}`)
+      }
+    }
 
     if (exitCode === 0) {
       const backtestResultsDir = path.join(userDataPath, 'backtest_results');

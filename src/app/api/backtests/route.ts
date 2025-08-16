@@ -35,7 +35,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, strategyId, configId, timerangeStart, timerangeEnd } = body
+    const { name, strategyId, configId, timerangeStart, timerangeEnd, overrideParams, sourceHyperoptTaskId } = body
 
     if (!name || !strategyId || !configId) {
       return NextResponse.json(
@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
         timeframe,
         timerangeStart: timerangeStart ? new Date(timerangeStart) : null,
         timerangeEnd: timerangeEnd ? new Date(timerangeEnd) : null,
+        sourceHyperoptTaskId,
       },
       include: {
         strategy: true,
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
     // 添加到队列
     await backtestQueue.add('backtest', {
       taskId: backtest.id,
+      overrideParams,
     })
 
     return NextResponse.json(backtest)

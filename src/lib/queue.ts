@@ -29,6 +29,10 @@ export const plotQueue = new Queue('plot', {
   connection,
 })
 
+export const hyperoptQueue = new Queue('hyperopt', {
+  connection,
+})
+
 export const createWorker = (queueName: string, processor: (job: any) => Promise<void>) => {
   return new Worker(queueName, processor, {
     connection,

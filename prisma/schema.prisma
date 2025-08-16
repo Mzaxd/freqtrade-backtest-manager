@@ -15,6 +15,7 @@ model Strategy {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   backtestTasks BacktestTask[]
+  hyperoptTasks HyperoptTask[]
 }
 
 model Config {
@@ -26,26 +27,29 @@ model Config {
   updatedAt   DateTime       @updatedAt
   filename    String?        @unique
   backtests   BacktestTask[]
+  hyperoptTasks HyperoptTask[]
 }
 
 model BacktestTask {
-  id             String    @id @default(cuid())
-  name           String
-  status         String
-  timeframe      String?
-  timerangeStart DateTime?
-  timerangeEnd   DateTime?
-  createdAt      DateTime  @default(now())
-  completedAt    DateTime?
-  resultsSummary Json?
-  rawOutputPath  String?
-  plotProfitUrl  String?
-  logs           String?
-  strategyId     Int
-  configId       Int?
-  config         Config?   @relation(fields: [configId], references: [id])
-  strategy       Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
-  trades         Trade[]
+  id                     String    @id @default(cuid())
+  name                   String
+  status                 String
+  timeframe              String?
+  timerangeStart         DateTime?
+  timerangeEnd           DateTime?
+  createdAt              DateTime  @default(now())
+  completedAt            DateTime?
+  resultsSummary         Json?
+  rawOutputPath          String?
+  plotProfitUrl          String?
+  logs                   String?
+  strategyId             Int
+  configId               Int?
+  config                 Config?   @relation(fields: [configId], references: [id])
+  strategy               Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  trades                 Trade[]
+  sourceHyperoptTaskId   String?
+  sourceHyperoptTask     HyperoptTask? @relation(name: "GeneratedBacktests", fields: [sourceHyperoptTaskId], references: [id], onDelete: SetNull)
 }
 
 model Trade {
@@ -79,6 +83,31 @@ model MarketData {
   startTime  DateTime?
 
   @@unique([exchange, pair, timeframe, marketType])
+}
+
+model HyperoptTask {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  status          String    @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  epochs          Int
+  spaces          String    // 存储逗号分隔的字符串，如 "buy,roi,stoploss"
+  lossFunction    String
+  timerange       String?
+  jobId           String?   // BullMQ/Redis中的任务ID
+
+  strategyId      Int
+  strategy        Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  configId        Int
+  config          Config    @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  bestResult      Json?     // 存储最佳结果的简报，用于快速展示
+  resultsPath     String?   // 存储生成的pickle结果文件的路径
+  logPath         String?   // 存储日志文件的路径
+
+  // 关联到此Hyperopt任务生成的所有回测任务
+  generatedBacktests BacktestTask[] @relation(name: "GeneratedBacktests")
 }
 
 model DataDownloadJob {

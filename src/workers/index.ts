@@ -2,13 +2,14 @@ import { createWorker } from '@/lib/queue'
 import { processBacktest } from './backtestWorker'
 import { processDataDownload } from './dataDownloadWorker'
 import { processPlot } from './plotWorker'
+import { processHyperopt } from './hyperoptWorker'
 
 console.log('Starting worker process...')
 
 const backtestWorker = createWorker('backtest', async (job) => {
-  const { taskId } = job.data
+  const { taskId, overrideParams } = job.data
   console.log(`Processing backtest task ${taskId}`)
-  await processBacktest(taskId)
+  await processBacktest(taskId, overrideParams)
 })
 
 const dataDownloadWorker = createWorker('dataDownload', async (job) => {
@@ -22,7 +23,13 @@ const plotWorker = createWorker('plot', async (job) => {
   await processPlot(job)
 })
 
-const workers = [backtestWorker, dataDownloadWorker, plotWorker]
+const hyperoptWorker = createWorker('hyperopt', async (job) => {
+  const { taskId } = job.data
+  console.log(`Processing hyperopt task ${taskId}`)
+  await processHyperopt(taskId)
+})
+
+const workers = [backtestWorker, dataDownloadWorker, plotWorker, hyperoptWorker]
 
 workers.forEach((worker) => {
   const workerName = worker.name

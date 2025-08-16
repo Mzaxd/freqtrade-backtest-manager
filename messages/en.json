@@ -5,6 +5,7 @@
   "Layout": {
     "dashboard": "Dashboard",
     "backtest_history": "Backtest History",
+    "hyperopt_history": "Hyperopt History",
     "strategy_management": "Strategy Management",
     "config_management": "Config Management",
     "data_management": "Data Management"
@@ -101,6 +102,121 @@
       "description": "This action cannot be undone. This will permanently delete your backtest record.",
       "cancel": "Cancel",
       "confirm": "Confirm Delete"
+    }
+  },
+  "HyperoptHistory": {
+    "title": "Hyperopt History",
+    "newHyperopt": "New Hyperopt",
+    "strategy": "Strategy",
+    "config": "Config",
+    "epochs": "Epochs",
+    "spaces": "Spaces",
+    "lossFunction": "Loss Function",
+    "timerange": "Timerange",
+    "createdAt": "Created At",
+    "completedAt": "Completed At",
+    "viewDetails": "View Details",
+    "viewResults": "View Results",
+    "generatedBacktests": "Generated Backtests",
+    "deleteDialog": {
+      "title": "Are you sure?",
+      "description": "This action cannot be undone. This will permanently delete your hyperopt record and all related backtests.",
+      "cancel": "Cancel",
+      "confirm": "Confirm Delete"
+    }
+  },
+  "NewHyperopt": {
+    "title": "New Hyperopt",
+    "basicInfo": "Basic Information",
+    "hyperoptSettings": "Hyperopt Settings",
+    "taskName": "Task Name",
+    "taskNamePlaceholder": "Enter hyperopt task name",
+    "strategy": "Strategy",
+    "selectStrategy": "Select a strategy",
+    "config": "Config",
+    "selectConfig": "Select a config",
+    "epochs": "Epochs",
+    "epochsDescription": "Number of optimization iterations to run",
+    "spaces": "Search Spaces",
+    "selectSpaces": "Select search spaces",
+    "spacesDescription": "Parameter spaces to optimize (buy, sell, roi, stoploss, trailing, protection, or all)",
+    "lossFunction": "Loss Function",
+    "selectLossFunction": "Select loss function",
+    "lossFunctionDescription": "Objective function to minimize during optimization",
+    "timerange": "Time Range",
+    "timerangeDescription": "Optional time range for optimization (format: YYYYMMDD-YYYYMMDD)",
+    "optimizationTip": {
+      "title": "Optimization Tip",
+      "description": "More epochs generally lead to better results but take longer to complete. Start with 100-500 epochs for testing."
+    },
+    "validation": {
+      "nameRequired": "Task name is required",
+      "strategyRequired": "Strategy is required",
+      "configRequired": "Config is required",
+      "epochsRequired": "Valid epochs number is required"
+    },
+    "loadError": {
+      "title": "Load Error",
+      "message": "Failed to load required data"
+    },
+    "error": "Error",
+    "cancel": "Cancel",
+    "createHyperopt": "Create Hyperopt"
+  },
+  "HyperoptDetail": {
+    "title": "Hyperopt Details",
+    "loadError": {
+      "title": "Load Error"
+    },
+    "notFound": "Hyperopt task not found",
+    "createdAt": "Created At",
+    "completedAt": "Completed At",
+    "retry": "Retry",
+    "retrying": "Retrying...",
+    "viewResults": "View Results",
+    "applyToStrategy": "Apply to Strategy",
+    "backtestWithParams": "Backtest with Params",
+    "applying": "Applying...",
+    "basicInfo": {
+      "title": "Basic Information",
+      "strategy": "Strategy",
+      "config": "Config",
+      "epochs": "Epochs",
+      "spaces": "Spaces",
+      "lossFunction": "Loss Function",
+      "timerange": "Time Range"
+    },
+    "bestResult": {
+      "title": "Best Result",
+      "loss": "Loss Value",
+      "epoch": "Best Epoch",
+      "trades": "Trades",
+      "parameters": "Parameters"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "results": "Results",
+      "logs": "Logs",
+      "backtests": "Backtests"
+    },
+    "results": {
+      "title": "Optimization Results",
+      "description": "View detailed optimization results and analysis",
+      "viewDetailed": "View Detailed Results",
+      "download": "Download Results",
+      "noResults": "No optimization results available",
+      "pending": "Results will be available after optimization completes"
+    },
+    "backtests": {
+      "title": "Generated Backtests",
+      "noBacktests": "No backtests generated yet",
+      "createBacktest": "Create Backtest with Best Parameters",
+      "createdAt": "Created At",
+      "viewDetails": "View Details"
+    },
+    "logs": {
+      "title": "Logs",
+      "noLogs": "No logs available"
     }
   },
     "StrategyManagement": {

@@ -5,6 +5,7 @@
   "Layout": {
     "dashboard": "仪表盘",
     "backtest_history": "回测历史",
+    "hyperopt_history": "超参优化历史",
     "strategy_management": "策略管理",
     "config_management": "配置管理",
     "data_management": "数据管理"
@@ -101,6 +102,121 @@
       "description": "此操作无法撤销。这将永久删除您的回测记录。",
       "cancel": "取消",
       "confirm": "确认删除"
+    }
+  },
+  "HyperoptHistory": {
+    "title": "超参优化历史",
+    "newHyperopt": "新建超参优化",
+    "strategy": "策略",
+    "config": "配置",
+    "epochs": "迭代次数",
+    "spaces": "搜索空间",
+    "lossFunction": "损失函数",
+    "timerange": "时间范围",
+    "createdAt": "创建时间",
+    "completedAt": "完成时间",
+    "viewDetails": "查看详情",
+    "viewResults": "查看结果",
+    "generatedBacktests": "生成的回测",
+    "deleteDialog": {
+      "title": "你确定吗?",
+      "description": "此操作无法撤销。这将永久删除您的超参优化记录和所有相关的回测。",
+      "cancel": "取消",
+      "confirm": "确认删除"
+    }
+  },
+  "NewHyperopt": {
+    "title": "新建超参优化",
+    "basicInfo": "基本信息",
+    "hyperoptSettings": "超参优化设置",
+    "taskName": "任务名称",
+    "taskNamePlaceholder": "输入超参优化任务名称",
+    "strategy": "策略",
+    "selectStrategy": "选择策略",
+    "config": "配置",
+    "selectConfig": "选择配置",
+    "epochs": "迭代次数",
+    "epochsDescription": "要运行的优化迭代次数",
+    "spaces": "搜索空间",
+    "selectSpaces": "选择搜索空间",
+    "spacesDescription": "要优化的参数空间 (买入、卖出、ROI、止损、追踪止损、保护或全部)",
+    "lossFunction": "损失函数",
+    "selectLossFunction": "选择损失函数",
+    "lossFunctionDescription": "优化过程中要最小化的目标函数",
+    "timerange": "时间范围",
+    "timerangeDescription": "可选的优化时间范围 (格式: YYYYMMDD-YYYYMMDD)",
+    "optimizationTip": {
+      "title": "优化建议",
+      "description": "更多迭代次数通常会带来更好的结果，但需要更长时间完成。测试时建议从 100-500 次迭代开始。"
+    },
+    "validation": {
+      "nameRequired": "任务名称是必需的",
+      "strategyRequired": "策略是必需的",
+      "configRequired": "配置是必需的",
+      "epochsRequired": "需要有效的迭代次数"
+    },
+    "loadError": {
+      "title": "加载错误",
+      "message": "无法加载所需数据"
+    },
+    "error": "错误",
+    "cancel": "取消",
+    "createHyperopt": "创建超参优化"
+  },
+  "HyperoptDetail": {
+    "title": "超参优化详情",
+    "loadError": {
+      "title": "加载错误"
+    },
+    "notFound": "未找到超参优化任务",
+    "createdAt": "创建时间",
+    "completedAt": "完成时间",
+    "retry": "重试",
+    "retrying": "重试中...",
+    "viewResults": "查看结果",
+    "applyToStrategy": "应用到策略",
+    "backtestWithParams": "使用参数回测",
+    "applying": "应用中...",
+    "basicInfo": {
+      "title": "基本信息",
+      "strategy": "策略",
+      "config": "配置",
+      "epochs": "迭代次数",
+      "spaces": "搜索空间",
+      "lossFunction": "损失函数",
+      "timerange": "时间范围"
+    },
+    "bestResult": {
+      "title": "最佳结果",
+      "loss": "损失值",
+      "epoch": "最佳迭代",
+      "trades": "交易次数",
+      "parameters": "参数"
+    },
+    "tabs": {
+      "overview": "概览",
+      "results": "结果",
+      "logs": "日志",
+      "backtests": "回测"
+    },
+    "results": {
+      "title": "优化结果",
+      "description": "查看详细的优化结果和分析",
+      "viewDetailed": "查看详细结果",
+      "download": "下载结果",
+      "noResults": "无优化结果可用",
+      "pending": "优化完成后结果将可用"
+    },
+    "backtests": {
+      "title": "生成的回测",
+      "noBacktests": "尚未生成回测",
+      "createBacktest": "使用最佳参数创建回测",
+      "createdAt": "创建时间",
+      "viewDetails": "查看详情"
+    },
+    "logs": {
+      "title": "日志",
+      "noLogs": "无日志可用"
     }
   },
   "StrategyManagement": {

@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, AlertCircle, Zap, X } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Loader2, AlertCircle, Info } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface Strategy {
@@ -22,21 +23,6 @@ interface Config {
   id: string
   name: string
   description: string
-}
-
-interface HyperoptResult {
-  id: string
-  bestResult: any
-  strategyId: string
-  configId: string
-  strategy: {
-    className: string
-  }
-  config: {
-    name: string
-  }
-  epochs: number
-  spaces: string
 }
 
 async function getStrategies() {
@@ -59,16 +45,8 @@ async function getConfigs() {
   return data.data || data || []
 }
 
-async function getHyperopt(id: string) {
-  const response = await fetch(`/api/hyperopts/${id}`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch hyperopt')
-  }
-  return response.json()
-}
-
-async function createBacktest(data: any) {
-  const response = await fetch('/api/backtests', {
+async function createHyperopt(data: any) {
+  const response = await fetch('/api/hyperopts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -76,28 +54,48 @@ async function createBacktest(data: any) {
   
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(error.error || 'Failed to create backtest')
+    throw new Error(error.error || 'Failed to create hyperopt')
   }
   
   return response.json()
 }
 
-export default function NewBacktestPage() {
-  const t = useTranslations('NewBacktest');
+const SPACES_OPTIONS = [
+  { value: 'buy', label: 'Buy Signals' },
+  { value: 'sell', label: 'Sell Signals' },
+  { value: 'roi', label: 'ROI' },
+  { value: 'stoploss', label: 'Stop Loss' },
+  { value: 'trailing', label: 'Trailing Stop' },
+  { value: 'protection', label: 'Protection' },
+  { value: 'all', label: 'All Spaces' }
+]
+
+const LOSS_FUNCTIONS = [
+  { value: 'ShortTradeDurHyperOptLoss', label: 'Short Trade Duration' },
+  { value: 'SortinoHyperOptLoss', label: 'Sortino Ratio' },
+  { value: 'SortinoHyperOptLossDaily', label: 'Sortino Ratio (Daily)' },
+  { value: 'SharpeHyperOptLoss', label: 'Sharpe Ratio' },
+  { value: 'SharpeHyperOptLossDaily', label: 'Sharpe Ratio (Daily)' },
+  { value: 'ProfitFactorHyperOptLoss', label: 'Profit Factor' },
+  { value: 'CalmarHyperOptLoss', label: 'Calmar Ratio' },
+  { value: 'MaxDrawDownHyperOptLoss', label: 'Max Drawdown' },
+  { value: 'OnlyProfitHyperOptLoss', label: 'Only Profit' },
+  { value: 'WinRateHyperOptLoss', label: 'Win Rate' }
+]
+
+export default function NewHyperoptPage() {
+  const t = useTranslations('NewHyperopt')
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const hyperoptId = searchParams.get('hyperopt')
-  
   const [formData, setFormData] = useState({
     name: '',
     strategyId: '',
     configId: '',
-    timerangeStart: '',
-    timerangeEnd: '',
-    hyperoptParams: null as any,
+    epochs: '100',
+    spaces: 'all',
+    lossFunction: 'SharpeHyperOptLoss',
+    timerange: '',
   })
   const [error, setError] = useState<string | null>(null)
-  const [hyperoptData, setHyperoptData] = useState<HyperoptResult | null>(null)
 
   const { data: strategies, isLoading: strategiesLoading, error: strategiesError } = useQuery<Strategy[]>({
     queryKey: ['strategies'],
@@ -109,42 +107,10 @@ export default function NewBacktestPage() {
     queryFn: getConfigs,
   })
 
-  const { data: hyperopt, isLoading: hyperoptLoading } = useQuery({
-    queryKey: ['hyperopt', hyperoptId],
-    queryFn: () => hyperoptId ? getHyperopt(hyperoptId) : Promise.resolve(null),
-    enabled: !!hyperoptId,
-  })
-
-  // 处理 hyperopt 数据加载
-  useEffect(() => {
-    if (hyperopt) {
-      setHyperoptData(hyperopt)
-      setFormData(prev => ({
-        ...prev,
-        strategyId: hyperopt.strategyId,
-        configId: hyperopt.configId,
-        name: `${hyperopt.strategy.className} - Hyperopt Backtest`,
-        hyperoptParams: hyperopt.bestResult?.params || null,
-      }))
-    }
-  }, [hyperopt])
-
-  const removeHyperoptParams = () => {
-    setFormData(prev => ({
-      ...prev,
-      hyperoptParams: null,
-    }))
-    setHyperoptData(null)
-    // Clear the hyperopt from URL
-    const url = new URL(window.location.href)
-    url.searchParams.delete('hyperopt')
-    window.history.pushState({}, '', url.toString())
-  }
-
   const mutation = useMutation({
-    mutationFn: createBacktest,
+    mutationFn: createHyperopt,
     onSuccess: (data: { id: string }) => {
-      router.push(`/backtests/${data.id}`)
+      router.push(`/hyperopts/${data.id}`)
     },
     onError: (error: Error) => {
       setError(error.message)
@@ -170,24 +136,14 @@ export default function NewBacktestPage() {
       return
     }
 
-    if (!formData.timerangeStart || !formData.timerangeEnd) {
-      setError(t('validation.timeRangeRequired'))
-      return
-    }
-
-    const start = new Date(formData.timerangeStart)
-    const end = new Date(formData.timerangeEnd)
-
-    if (start >= end) {
-      setError(t('validation.timeRangeInvalid'))
+    if (!formData.epochs || parseInt(formData.epochs) < 1) {
+      setError(t('validation.epochsRequired'))
       return
     }
 
     mutation.mutate({
       ...formData,
-      timerangeStart: new Date(formData.timerangeStart).toISOString(),
-      timerangeEnd: new Date(formData.timerangeEnd).toISOString(),
-      hyperoptParams: formData.hyperoptParams,
+      epochs: parseInt(formData.epochs),
     })
   }
 
@@ -209,7 +165,7 @@ export default function NewBacktestPage() {
     )
   }
 
-  if (strategiesLoading || configsLoading || hyperoptLoading) {
+  if (strategiesLoading || configsLoading) {
     return (
       <div className="container mx-auto p-6 max-w-2xl">
         <h1 className="text-3xl font-bold mb-6">{t('title')}</h1>
@@ -225,42 +181,6 @@ export default function NewBacktestPage() {
       <h1 className="text-3xl font-bold mb-6">{t('title')}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {hyperoptData && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-blue-800">
-                <div className="flex items-center">
-                  <Zap className="h-5 w-5 mr-2" />
-                  Hyperopt 参数已应用
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeHyperoptParams}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <p><strong>来源:</strong> {hyperoptData.strategy.className} - {hyperoptData.spaces} - {hyperoptData.epochs} epochs</p>
-                <p><strong>最佳损失值:</strong> {hyperoptData.bestResult?.loss || 'N/A'}</p>
-                {formData.hyperoptParams && (
-                  <div>
-                    <p className="font-medium mb-2">优化参数:</p>
-                    <div className="bg-white p-3 rounded border text-xs font-mono max-h-32 overflow-y-auto">
-                      {JSON.stringify(formData.hyperoptParams, null, 2)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader>
             <CardTitle>{t('basicInfo')}</CardTitle>
@@ -308,25 +228,91 @@ export default function NewBacktestPage() {
                 </SelectContent>
               </Select>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="start">{t('startTime')}</Label>
-                <Input
-                  id="start"
-                  type="date"
-                  value={formData.timerangeStart}
-                  onChange={(e) => setFormData({ ...formData, timerangeStart: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="end">{t('endTime')}</Label>
-                <Input
-                  id="end"
-                  type="date"
-                  value={formData.timerangeEnd}
-                  onChange={(e) => setFormData({ ...formData, timerangeEnd: e.target.value })}
-                />
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('hyperoptSettings')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="epochs">{t('epochs')}</Label>
+              <Input
+                id="epochs"
+                type="number"
+                min="1"
+                max="10000"
+                value={formData.epochs}
+                onChange={(e) => setFormData({ ...formData, epochs: e.target.value })}
+                placeholder="100"
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('epochsDescription')}
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="spaces">{t('spaces')}</Label>
+              <Select value={formData.spaces} onValueChange={(value) => setFormData({ ...formData, spaces: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('selectSpaces')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPACES_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('spacesDescription')}
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="lossFunction">{t('lossFunction')}</Label>
+              <Select value={formData.lossFunction} onValueChange={(value) => setFormData({ ...formData, lossFunction: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('selectLossFunction')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {LOSS_FUNCTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('lossFunctionDescription')}
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="timerange">{t('timerange')} (Optional)</Label>
+              <Input
+                id="timerange"
+                type="text"
+                value={formData.timerange}
+                onChange={(e) => setFormData({ ...formData, timerange: e.target.value })}
+                placeholder="20210101-20211231"
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('timerangeDescription')}
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <Info className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-800">{t('optimizationTip.title')}</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    {t('optimizationTip.description')}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -348,7 +334,7 @@ export default function NewBacktestPage() {
           </Button>
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t('createBacktest')}
+            {t('createHyperopt')}
           </Button>
         </div>
       </form>
