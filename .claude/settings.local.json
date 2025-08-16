@@ -25,7 +25,13 @@
       "Bash(pnpm db:push:*)",
       "Bash(grep:*)",
       "Bash(timeout:*)",
-      "Bash(pnpm update:*)"
+      "Bash(pnpm update:*)",
+      "Bash(taskkill:*)",
+      "Bash(docker exec freqtrade freqtrade hyperopt:*)",
+      "Bash(node:*)",
+      "Bash(pnpm worker:*)",
+      "Bash(python3:*)",
+      "Bash(sed:*)"
     ],
     "defaultMode": "acceptEdits"
   }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { writeFile, unlink } from 'fs/promises'
 
 export async function GET(
   request: NextRequest,
@@ -76,6 +77,23 @@ export async function POST(
 ) {
   try {
     const params = await context.params
+    
+    // 获取当前 hyperopt 任务信息以获取日志路径
+    const currentHyperopt = await prisma.hyperoptTask.findUnique({
+      where: { id: params.id }
+    })
+
+    // 清除现有日志文件
+    if (currentHyperopt?.logPath) {
+      try {
+        await unlink(currentHyperopt.logPath)
+        console.log(`[DEBUG] 已清除日志文件: ${currentHyperopt.logPath}`)
+      } catch (error) {
+        // 如果文件不存在，忽略错误
+        console.log(`[DEBUG] 日志文件不存在或已删除: ${currentHyperopt.logPath}`)
+      }
+    }
+
     // 重置任务状态为 PENDING
     const hyperopt = await prisma.hyperoptTask.update({
       where: { id: params.id },

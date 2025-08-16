@@ -140,7 +140,7 @@ export default function StrategiesPage() {
         <div className="flex gap-2">
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            新建策略
+            {t('createStrategy')}
           </Button>
           <Button asChild>
             <label className="cursor-pointer">
@@ -239,7 +239,7 @@ export default function StrategiesPage() {
                   <span className="text-sm text-muted-foreground">Hyperopt:</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">
-                      {strategy._count?.hyperoptTasks || 0} 个任务
+                      {t('hyperoptCount', { count: strategy._count?.hyperoptTasks || 0 })}
                     </span>
                     <Button
                       variant="ghost"
@@ -248,7 +248,7 @@ export default function StrategiesPage() {
                       onClick={() => router.push(`/hyperopts?strategy=${strategy.id}`)}
                     >
                       <Zap className="w-4 h-4 mr-1" />
-                      查看
+                      {t('view')}
                     </Button>
                   </div>
                 </div>

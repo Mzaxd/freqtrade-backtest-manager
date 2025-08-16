@@ -90,7 +90,10 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       }
     }
 
-    console.log(`Executing: ${command} ${args.join(' ')}`);
+    const commandString = `${command} ${args.join(' ')}`
+    logs.push(commandString)
+    redis.publish(`logs:${taskId}`, commandString + '\n')
+    console.log(`Executing: ${commandString}`);
 
     // 启动子进程
     const child = spawn(command, args, {

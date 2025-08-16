@@ -222,9 +222,12 @@
     "StrategyManagement": {
     "title": "Strategy Management",
     "uploadStrategy": "Upload Strategy",
+    "createStrategy": "Create Strategy",
     "filename": "Filename",
     "description": "Description",
     "createdAt": "Created At",
+    "hyperoptCount": "{count} tasks",
+    "view": "View",
     "deleteDialog": {
       "title": "Confirm Delete Strategy",
       "description": "Are you sure you want to delete the strategy \"{strategyName}\"? This action cannot be undone.",
@@ -370,6 +373,19 @@
     "data": "Data Config",
     "strategy": "Strategy Config",
     "other": "Other"
+  },
+  "HyperoptResults": {
+    "title": "Hyperopt Results",
+    "loadError": {
+      "title": "Load Error"
+    },
+    "error": "Error",
+    "missingId": "Missing hyperopt task ID",
+    "noResults": "No optimization results available",
+    "summary": "Results Summary",
+    "totalEpochs": "Total Epochs: {count}",
+    "bestEpoch": "Best Epoch: {epoch} (Loss: {loss})",
+    "detailedResults": "Detailed Results"
   }
 }
 }

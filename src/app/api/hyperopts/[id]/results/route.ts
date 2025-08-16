@@ -1,95 +1,112 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-
-const execAsync = promisify(exec)
+import { spawn } from 'child_process'
+import path from 'path'
+import { access } from 'fs/promises'
+import { constants } from 'fs'
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params
   try {
-    const params = await context.params
     const hyperopt = await prisma.hyperoptTask.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
-    if (!hyperopt) {
-      return NextResponse.json({ error: 'Hyperopt task not found' }, { status: 404 })
+    if (!hyperopt || !hyperopt.resultsPath) {
+      return new NextResponse(JSON.stringify({ error: 'Results not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
-    if (!hyperopt.resultsPath) {
-      return NextResponse.json({ error: 'Results not available' }, { status: 404 })
+    const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || path.join(process.cwd(), 'ft_user_data')
+    
+    let pickleFilePath: string;
+    if (path.isAbsolute(hyperopt.resultsPath)) {
+      // Handle old, absolute paths for backward compatibility
+      pickleFilePath = hyperopt.resultsPath
+    } else {
+      // Handle new, relative paths
+      pickleFilePath = path.join(userDataPath, hyperopt.resultsPath)
     }
-
-    if (hyperopt.status !== 'COMPLETED') {
-      return NextResponse.json({ error: 'Hyperopt task not completed' }, { status: 400 })
+    
+    // 验证文件是否存在
+    try {
+      await access(pickleFilePath, constants.F_OK | constants.R_OK)
+    } catch (fileError) {
+      console.error(`Results file not found or not accessible: ${pickleFilePath}`, fileError)
+      return new NextResponse(JSON.stringify({ error: 'Results file not found or is inaccessible.' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
+    
+    const pythonScriptPath = path.resolve(process.cwd(), 'scripts/pickle_to_json.py')
 
-    // 使用 Python 脚本解析 pickle 文件
-    const pythonScript = `
-import pickle
-import json
-import sys
-import os
+    const pythonProcess = spawn('python', [pythonScriptPath, pickleFilePath])
 
-try:
-    with open('${hyperopt.resultsPath}', 'rb') as f:
-        results = pickle.load(f)
-    
-    # 提取最佳结果
-    if hasattr(results, 'get_best_result'):
-        best_result = results.get_best_result()
-    else:
-        best_result = results
-    
-    # 转换为可序列化的格式
-    def convert_to_serializable(obj):
-        if hasattr(obj, '__dict__'):
-            return obj.__dict__
-        elif isinstance(obj, (list, tuple)):
-            return [convert_to_serializable(item) for item in obj]
-        elif isinstance(obj, dict):
-            return {key: convert_to_serializable(value) for key, value in obj.items()}
-        else:
-            return obj
-    
-    serializable_result = convert_to_serializable(best_result)
-    print(json.dumps(serializable_result))
-    
-except Exception as e:
-    print(json.dumps({'error': str(e)}))
-    sys.exit(1)
-`
+    let jsonData = ''
+    let errorData = ''
+
+    pythonProcess.stdout.on('data', (data) => {
+      jsonData += data.toString()
+    })
+
+    pythonProcess.stderr.on('data', (data) => {
+      errorData += data.toString()
+    })
+
+    const exitCode = await new Promise<number>((resolve) => {
+      pythonProcess.on('close', resolve)
+    })
+
+    if (exitCode !== 0) {
+      console.error(`Python script exited with code ${exitCode}: ${errorData}`)
+      return new NextResponse(JSON.stringify({ error: 'Failed to process results file', details: errorData }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
 
     try {
-      const { stdout } = await execAsync(`python3 -c "${pythonScript}"`)
-      const result = JSON.parse(stdout)
+      let results = JSON.parse(jsonData)
       
-      if ('error' in result) {
-        return NextResponse.json({ error: result.error }, { status: 500 })
+      // Add a defensive check to ensure results is an array
+      if (!Array.isArray(results)) {
+        // If results is not an array (e.g., it's an error object from the script),
+        // reset it to an empty array to prevent frontend errors.
+        results = [];
       }
       
-      return NextResponse.json(result)
-    } catch (execError) {
-      console.error('[DEBUG] Python 脚本执行失败:', execError)
-      return NextResponse.json(
-        { 
-          error: 'Failed to parse hyperopt results',
-          details: execError instanceof Error ? execError.message : 'Unknown error'
-        },
-        { status: 500 }
-      )
+      // Freqtrade hyperopt results are typically a list of dicts.
+      // Let's find the best one to also return it.
+      let best_epoch = null;
+      if (Array.isArray(results) && results.length > 0) {
+        best_epoch = results.reduce((best, current) => {
+          return current.loss < best.loss ? current : best;
+        }, results[0]);
+      }
+
+      return new NextResponse(JSON.stringify({ results, best_epoch }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      return new NextResponse(JSON.stringify({ error: 'Failed to parse results data' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
+
   } catch (error) {
-    console.error('[DEBUG] 获取 Hyperopt 结果失败:', error)
-    return NextResponse.json(
-      { 
-        error: 'Failed to fetch hyperopt results',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    console.error('API Error:', error)
+    return new NextResponse(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 }

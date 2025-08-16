@@ -1,8 +1,8 @@
-import { spawn } from 'child_process'
+import { spawn, exec } from 'child_process'
 import { prisma } from '@/lib/prisma'
 import Redis from 'ioredis'
 import path from 'path'
-import { mkdir, writeFile } from 'fs/promises'
+import { mkdir, writeFile, readdir, stat, readFile } from 'fs/promises'
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
@@ -38,15 +38,14 @@ export async function processHyperopt(taskId: string) {
     const hyperoptResultsDir = path.join(userDataPath, 'hyperopt_results')
     await mkdir(hyperoptResultsDir, { recursive: true })
 
-    const resultsPath = path.join(hyperoptResultsDir, `hyperopt-result-${taskId}.pickle`)
     const logPath = path.join(hyperoptResultsDir, `hyperopt-log-${taskId}.txt`)
+    const relativeLogPath = path.relative(userDataPath, logPath)
 
-    // 更新任务路径信息
+    // Only update the log path initially. The results path will be updated after the file is created.
     await prisma.hyperoptTask.update({
       where: { id: taskId },
       data: {
-        resultsPath,
-        logPath,
+        logPath: relativeLogPath,
       },
     })
 
@@ -58,8 +57,8 @@ export async function processHyperopt(taskId: string) {
       '--strategy-path', path.posix.join(containerUserDataPath, 'strategies'),
       '--epochs', task.epochs.toString(),
       '--spaces', task.spaces,
-      '--loss-function', task.lossFunction,
-      '--hyperopt-jobs', '-1', // 使用所有可用CPU核心
+      '--hyperopt-loss', task.lossFunction,
+      '--job-workers', '-1', // 使用所有可用CPU核心
       '--print-all',
     ]
 
@@ -68,7 +67,10 @@ export async function processHyperopt(taskId: string) {
       args.push('--timerange', task.timerange)
     }
 
-    console.log(`Executing: ${command} ${args.join(' ')}`)
+    const commandString = `${command} ${args.join(' ')}`
+    logs.push(commandString)
+    redis.publish(`hyperopt-logs:${taskId}`, commandString + '\n')
+    console.log(`Executing: ${commandString}`)
 
     // 启动子进程
     const child = spawn(command, args, {
@@ -81,6 +83,16 @@ export async function processHyperopt(taskId: string) {
       const log = data.toString()
       logs.push(log)
       redis.publish(`hyperopt-logs:${taskId}`, log)
+      // TODO: Prisma client is likely stale. Run `npx prisma generate` to fix type errors.
+      prisma.hyperoptTask.findUnique({ where: { id: taskId } }).then(task => {
+        if (task) {
+          const updatedLogs = (task.logs || '') + log;
+          prisma.hyperoptTask.update({
+            where: { id: taskId },
+            data: { logs: updatedLogs },
+          }).catch(console.error);
+        }
+      });
       console.log(`[Hyperopt ${taskId}] ${log}`)
     })
 
@@ -88,7 +100,18 @@ export async function processHyperopt(taskId: string) {
       const log = data.toString()
       logs.push(log)
       redis.publish(`hyperopt-logs:${taskId}`, log)
-      console.error(`[Hyperopt ${taskId}] ERROR: ${log}`)
+      // TODO: Prisma client is likely stale. Run `npx prisma generate` to fix type errors.
+      prisma.hyperoptTask.findUnique({ where: { id: taskId } }).then(task => {
+        if (task) {
+          const updatedLogs = (task.logs || '') + log;
+          prisma.hyperoptTask.update({
+            where: { id: taskId },
+            data: { logs: updatedLogs },
+          }).catch(console.error);
+        }
+      });
+      // Treat stderr as regular log output, as freqtrade often prints info there.
+      console.log(`[Hyperopt ${taskId}] ${log}`)
     })
 
     // 等待进程完成
@@ -105,27 +128,65 @@ export async function processHyperopt(taskId: string) {
       console.error(`Failed to write log file: ${logError}`)
     }
 
-    if (exitCode === 0) {
-      // 解析结果以提取最佳参数
-      let bestResult = null
-      
-      // 从日志中提取最佳结果
-      const bestMatch = fullLogs.match(/Best result:\s*\n\s*Loss:\s*([0-9.]+)[\s\S]*?params:\s*({[\s\S]*?})/)
-      if (bestMatch) {
-        try {
-          const loss = parseFloat(bestMatch[1])
-          const paramsStr = bestMatch[2]
-          
-          // 尝试解析参数
-          const params = JSON.parse(paramsStr)
-          
-          bestResult = {
-            loss,
-            params,
-            timestamp: new Date().toISOString(),
+    const isSuccessful = exitCode === 0 || fullLogs.includes('completed successfully')
+
+    if (isSuccessful) {
+      // Find the results file, as freqtrade generates a dynamic name.
+      let latestHyperoptFile = ''
+      try {
+        const files = await readdir(hyperoptResultsDir)
+        const resultFiles = files.filter(
+          f => f.endsWith('.fthypt') || f.endsWith('.pkl'),
+        )
+
+        if (resultFiles.length > 0) {
+          let latestMtime = 0
+          for (const file of resultFiles) {
+            const filePath = path.join(hyperoptResultsDir, file)
+            const stats = await stat(filePath)
+            // A buffer of 10 minutes to ensure we get a file from the current run
+            if (stats.mtimeMs > latestMtime && stats.mtimeMs > (Date.now() - 10 * 60 * 1000)) {
+              latestMtime = stats.mtimeMs
+              latestHyperoptFile = filePath
+            }
           }
-        } catch (parseError) {
-          console.error('Failed to parse best result from logs:', parseError)
+        }
+      } catch (findFileError) {
+        console.error('Error finding hyperopt results file:', findFileError)
+      }
+
+      if (!latestHyperoptFile) {
+        console.error('Could not find a recently created .fthypt or .pkl file.')
+      }
+      
+      const relativeResultsPath = latestHyperoptFile
+        ? path.relative(userDataPath, latestHyperoptFile)
+        : null;
+      
+      let bestResult: any = null;
+
+      if (latestHyperoptFile) {
+        try {
+          // 使用python脚本将pickle文件转换为JSON
+          const scriptPath = path.resolve(process.cwd(), 'scripts', 'pickle_to_json.py');
+          const jsonOutput = await new Promise<string>((resolve, reject) => {
+            exec(`python ${scriptPath} "${latestHyperoptFile}"`, (error, stdout, stderr) => {
+              if (error) {
+                console.error('Python script error:', stderr);
+                return reject(error);
+              }
+              resolve(stdout);
+            });
+          });
+
+          const results = JSON.parse(jsonOutput);
+          
+          if (Array.isArray(results) && results.length > 0) {
+            // 假设loss越小越好
+            bestResult = results.reduce((prev, current) => (prev.loss < current.loss) ? prev : current);
+          }
+        } catch (e) {
+          console.error('Failed to parse hyperopt results file:', e);
         }
       }
 
@@ -134,7 +195,9 @@ export async function processHyperopt(taskId: string) {
         where: { id: taskId },
         data: {
           status: 'COMPLETED',
+          resultsPath: relativeResultsPath,
           bestResult: bestResult ? JSON.stringify(bestResult) : undefined,
+          logs: fullLogs,
         },
       })
     } else {
@@ -143,6 +206,7 @@ export async function processHyperopt(taskId: string) {
         where: { id: taskId },
         data: {
           status: 'FAILED',
+          logs: fullLogs,
         },
       })
     }

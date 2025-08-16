@@ -5,19 +5,55 @@ import { useEffect, useState, useRef } from 'react'
 interface RealtimeLogViewerProps {
   logSourceUrl: string
   initialLogs?: string
+  clearCache?: boolean
 }
 
-const RealtimeLogViewer = ({ logSourceUrl, initialLogs }: RealtimeLogViewerProps) => {
+const RealtimeLogViewer = ({ logSourceUrl, initialLogs, clearCache }: RealtimeLogViewerProps) => {
   const [logs, setLogs] = useState<string[]>([])
   const logsEndRef = useRef<HTMLDivElement | null>(null)
+  const storageKey = useRef(`logs-${logSourceUrl.split('/').pop()}`)
 
   useEffect(() => {
-    setLogs(initialLogs ? initialLogs.split('\n') : [])
+    // Clear cache if requested
+    if (clearCache) {
+      localStorage.removeItem(storageKey.current)
+      setLogs(initialLogs ? initialLogs.split('\n') : [])
+      return
+    }
+
+    // Try to load cached logs from localStorage first
+    const cachedLogs = localStorage.getItem(storageKey.current)
+    if (cachedLogs) {
+      try {
+        const parsedLogs = JSON.parse(cachedLogs)
+        setLogs(parsedLogs)
+      } catch (error) {
+        console.error('Failed to parse cached logs:', error)
+        // If parsing fails, clear the corrupted cache
+        localStorage.removeItem(storageKey.current)
+        if (initialLogs) {
+          const initialLogLines = initialLogs.split('\n')
+          setLogs(initialLogLines)
+          localStorage.setItem(storageKey.current, JSON.stringify(initialLogLines))
+        }
+      }
+    } else if (initialLogs) {
+      // If no cached logs, use initialLogs
+      const initialLogLines = initialLogs.split('\n')
+      setLogs(initialLogLines)
+      localStorage.setItem(storageKey.current, JSON.stringify(initialLogLines))
+    }
+    
     const eventSource = new EventSource(logSourceUrl)
 
     eventSource.onmessage = (event) => {
       const parsedData = JSON.parse(event.data)
-      setLogs((prevLogs) => [...prevLogs, parsedData.log])
+      setLogs((prevLogs) => {
+        const newLogs = [...prevLogs, parsedData.log]
+        // Cache logs in localStorage
+        localStorage.setItem(storageKey.current, JSON.stringify(newLogs))
+        return newLogs
+      })
     }
 
     eventSource.onerror = (err) => {
@@ -28,7 +64,7 @@ const RealtimeLogViewer = ({ logSourceUrl, initialLogs }: RealtimeLogViewerProps
     return () => {
       eventSource.close()
     }
-  }, [logSourceUrl, initialLogs])
+  }, [logSourceUrl, initialLogs, clearCache])
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })

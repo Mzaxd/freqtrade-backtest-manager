@@ -24,6 +24,7 @@ interface HyperoptTask {
   bestResult?: any
   resultsPath?: string
   logPath?: string
+  logs?: string
   strategy: {
     id: number
     className: string
@@ -55,6 +56,7 @@ export default function HyperoptDetailPage() {
   const id = params.id as string
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState("overview")
+  const [clearLogCache, setClearLogCache] = useState(false)
 
   const { data: hyperopt, isLoading, error } = useQuery({
     queryKey: ['hyperopt', id],
@@ -73,6 +75,7 @@ export default function HyperoptDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hyperopt', id] })
       queryClient.invalidateQueries({ queryKey: ['hyperopts'] })
+      setClearLogCache(true)
     },
   })
 
@@ -90,6 +93,10 @@ export default function HyperoptDetailPage() {
   const handleApplyToStrategy = () => {
     applyMutation.mutate()
   }
+
+  const handleDownloadResults = () => {
+    window.location.href = `/api/hyperopts/${id}/results/download`;
+  };
 
   if (isLoading) {
     return (
@@ -124,7 +131,7 @@ export default function HyperoptDetailPage() {
 
   const typedHyperopt = hyperopt as HyperoptTask
   const displayName = `${typedHyperopt.strategy.className} - ${typedHyperopt.spaces} - ${typedHyperopt.epochs} epochs`
-  const showLogs = ['RUNNING', 'PENDING'].includes(typedHyperopt.status) || !!typedHyperopt.logPath
+  const showLogs = ['RUNNING', 'PENDING'].includes(typedHyperopt.status) || !!typedHyperopt.logs
 
   const getStatusColor = (status: string): string => {
     switch (status) {
@@ -292,7 +299,7 @@ export default function HyperoptDetailPage() {
                       </Button>
                     </Link>
                     
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleDownloadResults}>
                       <Download className="h-4 w-4 mr-2" />
                       {t('results.download')}
                     </Button>
@@ -370,8 +377,9 @@ export default function HyperoptDetailPage() {
               </CardHeader>
               <CardContent className="h-[75vh] overflow-y-auto">
                 <RealtimeLogViewer
-                  logSourceUrl={`/api/hyperopts/${id}/logs`}
-                  initialLogs=""
+                  logSourceUrl={`/api/hyperopts/${id}/logs/stream`}
+                  initialLogs={typedHyperopt.logs || ''}
+                  clearCache={clearLogCache}
                 />
               </CardContent>
             </Card>

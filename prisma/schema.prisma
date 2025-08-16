@@ -105,6 +105,7 @@ model HyperoptTask {
   bestResult      Json?     // 存储最佳结果的简报，用于快速展示
   resultsPath     String?   // 存储生成的pickle结果文件的路径
   logPath         String?   // 存储日志文件的路径
+  logs            String?   @db.Text
 
   // 关联到此Hyperopt任务生成的所有回测任务
   generatedBacktests BacktestTask[] @relation(name: "GeneratedBacktests")

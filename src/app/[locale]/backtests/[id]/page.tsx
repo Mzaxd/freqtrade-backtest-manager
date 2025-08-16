@@ -295,7 +295,7 @@ export default function BacktestDetailPage() {
               </CardHeader>
               <CardContent className="h-[75vh] overflow-y-auto">
                 <RealtimeLogViewer
-                  logSourceUrl={`/api/backtests/${id}/logs`}
+                  logSourceUrl={`/api/backtests/${id}/logs/stream`}
                   initialLogs={typedBacktest.logs}
                 />
               </CardContent>

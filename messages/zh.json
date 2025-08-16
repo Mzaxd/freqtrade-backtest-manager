@@ -222,12 +222,15 @@
   "StrategyManagement": {
     "title": "策略管理",
     "uploadStrategy": "上传策略",
+    "createStrategy": "新建策略",
     "filename": "文件名",
     "description": "描述",
     "createdAt": "创建时间",
+    "hyperoptCount": "{count} 个任务",
+    "view": "查看",
     "deleteDialog": {
       "title": "确认删除策略",
-      "description": "您确定要删除策略 “{strategyName}” 吗？此操作不可撤销。",
+      "description": "您确定要删除策略 \"{strategyName}\" 吗？此操作不可撤销。",
       "error": "错误: {error}",
       "cancel": "取消",
       "deleting": "删除中...",
@@ -250,7 +253,7 @@
     "deleteFailed": "删除失败",
     "deleteDialog": {
       "title": "您确定要删除吗?",
-      "description": "此操作无法撤销。这将永久删除配置 “{configName}”。",
+      "description": "此操作无法撤销。这将永久删除配置 \"{configName}\"。",
       "cancel": "取消",
       "confirm": "确定删除"
     }
@@ -346,30 +349,43 @@
     "showDocs": "显示文档",
     "createButton": "创建配置",
     "saveButton": "保存更改"
-},
-"ConfigDocumentation": {
-  "title": "配置文档",
-  "loading": "加载文档...",
-  "loadFailed": "无法加载配置文档。",
-  "searchPlaceholder": "搜索参数名称或描述...",
-  "type": "类型",
-  "default": "默认值",
-  "allowedValues": "可选值",
-  "noMatch": "未找到匹配的参数。",
-  "categories": {
-    "main": "核心配置",
-    "exchange": "交易所",
-    "pairlist": "交易对列表",
-    "risk_management": "风险管理",
-    "trading_behavior": "交易行为",
-    "api_server": "API 服务器",
-    "notifications": "通知",
-    "edge": "边缘计算",
-    "freqai": "FreqAI 机器学习",
-    "experimental": "实验性功能",
-    "data": "数据配置",
-    "strategy": "策略配置",
-    "other": "其他"
+  },
+  "ConfigDocumentation": {
+    "title": "配置文档",
+    "loading": "加载文档...",
+    "loadFailed": "无法加载配置文档。",
+    "searchPlaceholder": "搜索参数名称或描述...",
+    "type": "类型",
+    "default": "默认值",
+    "allowedValues": "可选值",
+    "noMatch": "未找到匹配的参数。",
+    "categories": {
+      "main": "核心配置",
+      "exchange": "交易所",
+      "pairlist": "交易对列表",
+      "risk_management": "风险管理",
+      "trading_behavior": "交易行为",
+      "api_server": "API 服务器",
+      "notifications": "通知",
+      "edge": "边缘计算",
+      "freqai": "FreqAI 机器学习",
+      "experimental": "实验性功能",
+      "data": "数据配置",
+      "strategy": "策略配置",
+      "other": "其他"
+    }
+  },
+  "HyperoptResults": {
+    "title": "超参优化结果",
+    "loadError": {
+      "title": "加载错误"
+    },
+    "error": "错误",
+    "missingId": "缺少超参优化任务ID",
+    "noResults": "无优化结果可用",
+    "summary": "结果摘要",
+    "totalEpochs": "总迭代次数: {count}",
+    "bestEpoch": "最佳迭代: {epoch} (损失值: {loss})",
+    "detailedResults": "详细结果"
   }
-}
 }
