@@ -32,7 +32,6 @@ export async function GET(
       // Handle new, relative paths
       pickleFilePath = path.join(userDataPath, hyperopt.resultsPath)
     }
-    
     // 验证文件是否存在
     try {
       await access(pickleFilePath, constants.F_OK | constants.R_OK)
@@ -43,7 +42,6 @@ export async function GET(
         headers: { 'Content-Type': 'application/json' },
       })
     }
-    
     const pythonScriptPath = path.resolve(process.cwd(), 'scripts/pickle_to_json.py')
 
     const pythonProcess = spawn('python', [pythonScriptPath, pickleFilePath])

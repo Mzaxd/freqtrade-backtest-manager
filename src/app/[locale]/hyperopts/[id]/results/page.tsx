@@ -96,8 +96,8 @@ export default function HyperoptResultsPage() {
                   <TableHead>Epoch</TableHead>
                   <TableHead>Loss</TableHead>
                   {columns.map(col => <TableHead key={col}>{col}</TableHead>)}
-                  <TableHead>Start Time</TableHead>
-                  <TableHead>End Time</TableHead>
+                  <TableHead>Run Start Time</TableHead>
+                  <TableHead>Run End Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -106,8 +106,8 @@ export default function HyperoptResultsPage() {
                     <TableCell>{row.epoch}</TableCell>
                     <TableCell>{row.loss.toFixed(6)}</TableCell>
                     {columns.map(col => <TableCell key={col}>{row.params[col]}</TableCell>)}
-                    <TableCell>{format(new Date(row.start_time), 'PPpp')}</TableCell>
-                    <TableCell>{format(new Date(row.end_time), 'PPpp')}</TableCell>
+                    <TableCell>{row.results_metrics?.backtest_run_start_ts ? format(new Date(row.results_metrics.backtest_run_start_ts * 1000), 'PPpp') : 'N/A'}</TableCell>
+                    <TableCell>{row.results_metrics?.backtest_run_end_ts ? format(new Date(row.results_metrics.backtest_run_end_ts * 1000), 'PPpp') : 'N/A'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

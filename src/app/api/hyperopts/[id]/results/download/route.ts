@@ -13,14 +13,19 @@ export async function GET(
       where: { id },
     })
 
-    if (!hyperopt || !hyperopt.logPath) {
+    if (!hyperopt || !hyperopt.resultsPath) {
       return new NextResponse(JSON.stringify({ error: 'File not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
-    const filePath = path.resolve(hyperopt.logPath)
+    const basePath = process.env.FREQTRADE_USER_DATA_PATH
+    if (!basePath) {
+      throw new Error('FREQTRADE_USER_DATA_PATH environment variable not set')
+    }
+
+    const filePath = path.join(basePath, hyperopt.resultsPath)
     const fileBuffer = await readFile(filePath)
     const filename = path.basename(filePath)
 

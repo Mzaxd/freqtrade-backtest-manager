@@ -18,16 +18,31 @@ def main():
             except (pickle.UnpicklingError, ValueError) as pickle_error:
                 # If pickle fails, try reading as text (might be JSON or text file)
                 f.seek(0)
-                try:
-                    text_content = f.read().decode('utf-8')
-                    # Try to parse as JSON
+                f.seek(0)
+                lines = f.readlines()
+                # It may be a JSONL file (JSON-per-line)
+                json_lines_data = []
+                is_json_lines = False
+                for line in lines:
                     try:
+                        # Attempt to parse each line as a JSON object
+                        json_lines_data.append(json.loads(line.decode('utf-8')))
+                        is_json_lines = True
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        # If any line fails, it's not a valid JSONL file.
+                        is_json_lines = False
+                        break
+                
+                if is_json_lines:
+                    data = json_lines_data
+                else:
+                    # Fallback for other text-based or single-JSON files
+                    try:
+                        text_content = ''.join([l.decode('utf-8') for l in lines])
                         data = json.loads(text_content)
-                    except json.JSONDecodeError:
-                        # If not JSON, return as text
-                        data = {"raw_text": text_content}
-                except UnicodeDecodeError:
-                    raise pickle_error
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                         data = {"raw_text": text_content}
+
         
         # Freqtrade hyperopt results are often a list of objects or a dictionary
         # We need to handle pandas DataFrames specifically if they are present
