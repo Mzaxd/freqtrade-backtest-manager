@@ -50,8 +50,9 @@ export async function POST(request: NextRequest) {
       configId, 
       epochs, 
       spaces, 
-      lossFunction, 
-      timerange 
+      lossFunction,
+      timerange,
+      jobWorkers
     } = body
 
     if (!name || !strategyId || !configId || !epochs || !spaces || !lossFunction) {
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
         spaces,
         lossFunction,
         timerange: timerange || undefined,
+        jobWorkers: jobWorkers || undefined,
         status: 'PENDING',
       },
       include: {

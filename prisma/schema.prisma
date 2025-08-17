@@ -94,6 +94,7 @@ model HyperoptTask {
   spaces          String    // 存储逗号分隔的字符串，如 "buy,roi,stoploss"
   lossFunction    String
   timerange       String?
+  jobWorkers      Int?
   jobId           String?   // BullMQ/Redis中的任务ID
   duration        Float?    // 任务执行时间（秒）
 

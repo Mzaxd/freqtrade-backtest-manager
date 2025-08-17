@@ -60,9 +60,14 @@ export async function processHyperopt(taskId: string) {
       '--epochs', task.epochs.toString(),
       '--spaces', task.spaces,
       '--hyperopt-loss', task.lossFunction,
-      '--job-workers', '-1', // 使用所有可用CPU核心
       '--print-all',
     ]
+
+    if (task.jobWorkers && task.jobWorkers > 0) {
+      args.push('--job-workers', task.jobWorkers.toString())
+    } else {
+      args.push('--job-workers', '-1') // 使用所有可用CPU核心
+    }
 
     // 如果有时间范围参数，添加到命令中
     if (task.timerange) {

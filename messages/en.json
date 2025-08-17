@@ -13,14 +13,27 @@
   "Dashboard": {
     "title": "Dashboard",
     "total_backtests": "Total Backtests",
-    "running": "Running",
-    "completed": "Completed",
+    "total_hyperopts": "Total Hyperopts",
+    "running_tasks": "Running Tasks",
     "total_strategies": "Total Strategies",
+    "total_configs": "Total Configs",
+    "backtest_stats": "Backtest Stats",
+    "hyperopt_stats": "Hyperopt Stats",
+    "success_rate": "Success Rate",
     "recent_backtests": "Recent Backtests",
+    "recent_hyperopts": "Recent Hyperopts",
     "quick_actions": "Quick Actions",
     "new_backtest": "New Backtest",
+    "new_hyperopt": "New Hyperopt",
     "manage_strategies": "Manage Strategies",
-    "manage_configs": "Manage Configs"
+    "manage_configs": "Manage Configs",
+    "system_info": "System Info",
+    "total_tasks": "Total Tasks",
+    "active_tasks": "Active Tasks",
+    "completed_tasks": "Completed Tasks",
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed"
   },
   "DataManagement": {
     "title": "Data Management",
@@ -145,6 +158,9 @@
     "lossFunctionDescription": "Objective function to minimize during optimization",
     "timerange": "Time Range",
     "timerangeDescription": "Optional time range for optimization (format: YYYYMMDD-YYYYMMDD)",
+    "jobWorkers": "CPU Cores",
+    "jobWorkersPlaceholder": "e.g., 4",
+    "jobWorkersDescription": "Number of CPU cores to use. Leave blank to use all available cores.",
     "optimizationTip": {
       "title": "Optimization Tip",
       "description": "More epochs generally lead to better results but take longer to complete. Start with 100-500 epochs for testing."

@@ -94,6 +94,7 @@ export default function NewHyperoptPage() {
     spaces: 'all',
     lossFunction: 'SharpeHyperOptLoss',
     timerange: '',
+    jobWorkers: '',
   })
   const [error, setError] = useState<string | null>(null)
 
@@ -144,6 +145,7 @@ export default function NewHyperoptPage() {
     mutation.mutate({
       ...formData,
       epochs: parseInt(formData.epochs),
+      jobWorkers: formData.jobWorkers ? parseInt(formData.jobWorkers) : undefined,
     })
   }
 
@@ -301,6 +303,21 @@ export default function NewHyperoptPage() {
               />
               <p className="text-sm text-muted-foreground mt-1">
                 {t('timerangeDescription')}
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="jobWorkers">{t('jobWorkers')} (Optional)</Label>
+              <Input
+                id="jobWorkers"
+                type="number"
+                min="1"
+                value={formData.jobWorkers}
+                onChange={(e) => setFormData({ ...formData, jobWorkers: e.target.value })}
+                placeholder={t('jobWorkersPlaceholder')}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('jobWorkersDescription')}
               </p>
             </div>
 

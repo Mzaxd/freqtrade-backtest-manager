@@ -13,14 +13,27 @@
   "Dashboard": {
     "title": "仪表盘",
     "total_backtests": "总回测数",
-    "running": "运行中",
-    "completed": "已完成",
+    "total_hyperopts": "超参优化数",
+    "running_tasks": "运行中任务",
     "total_strategies": "策略数",
+    "total_configs": "配置数",
+    "backtest_stats": "回测统计",
+    "hyperopt_stats": "超参优化统计",
+    "success_rate": "成功率",
     "recent_backtests": "最近回测",
+    "recent_hyperopts": "最近超参优化",
     "quick_actions": "快速操作",
     "new_backtest": "新建回测",
+    "new_hyperopt": "新建超参优化",
     "manage_strategies": "管理策略",
-    "manage_configs": "管理配置"
+    "manage_configs": "管理配置",
+    "system_info": "系统信息",
+    "total_tasks": "总任务数",
+    "active_tasks": "活跃任务",
+    "completed_tasks": "已完成任务",
+    "running": "运行中",
+    "completed": "已完成",
+    "failed": "失败"
   },
   "DataManagement": {
     "title": "数据管理",
@@ -145,6 +158,9 @@
     "lossFunctionDescription": "优化过程中要最小化的目标函数",
     "timerange": "时间范围",
     "timerangeDescription": "可选的优化时间范围 (格式: YYYYMMDD-YYYYMMDD)",
+    "jobWorkers": "CPU核心数",
+    "jobWorkersPlaceholder": "例如, 4",
+    "jobWorkersDescription": "要使用的CPU核心数。留空以使用所有可用的核心。",
     "optimizationTip": {
       "title": "优化建议",
       "description": "更多迭代次数通常会带来更好的结果，但需要更长时间完成。测试时建议从 100-500 次迭代开始。"
