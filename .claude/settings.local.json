@@ -31,7 +31,8 @@
       "Bash(node:*)",
       "Bash(pnpm worker:*)",
       "Bash(python3:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(pnpm approve-builds:*)"
     ],
     "defaultMode": "acceptEdits"
   }

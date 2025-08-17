@@ -95,6 +95,7 @@ model HyperoptTask {
   lossFunction    String
   timerange       String?
   jobId           String?   // BullMQ/Redis中的任务ID
+  duration        Float?    // 任务执行时间（秒）
 
   strategyId      Int
   strategy        Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)

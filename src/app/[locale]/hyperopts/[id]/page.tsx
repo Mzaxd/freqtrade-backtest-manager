@@ -13,6 +13,22 @@ import { useTranslations } from 'next-intl'
 import { format } from 'date-fns'
 import Link from 'next/link'
 
+function formatDuration(seconds?: number): string {
+  if (!seconds) return 'N/A'
+  
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${remainingSeconds}s`
+  } else if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`
+  } else {
+    return `${remainingSeconds}s`
+  }
+}
+
 interface HyperoptTask {
   id: string
   status: string
@@ -21,6 +37,7 @@ interface HyperoptTask {
   lossFunction: string
   timerange?: string
   createdAt: string
+  duration?: number
   bestResult?: any
   resultsPath?: string
   logPath?: string
@@ -235,6 +252,10 @@ export default function HyperoptDetailPage() {
                   <div>
                     <p className="text-sm text-gray-600">{t('basicInfo.lossFunction')}</p>
                     <p className="font-medium">{typedHyperopt.lossFunction}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">{t('basicInfo.duration')}</p>
+                    <p className="font-medium">{formatDuration(typedHyperopt.duration)}</p>
                   </div>
                   {typedHyperopt.timerange && (
                     <div>

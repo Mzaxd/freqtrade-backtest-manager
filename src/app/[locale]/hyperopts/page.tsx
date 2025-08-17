@@ -6,6 +6,22 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import Link from 'next/link'
+
+function formatDuration(seconds?: number): string {
+  if (!seconds) return 'N/A'
+  
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${remainingSeconds}s`
+  } else if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`
+  } else {
+    return `${remainingSeconds}s`
+  }
+}
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +71,7 @@ interface HyperoptTask {
   lossFunction: string
   timerange?: string
   createdAt: string
+  duration?: number
   bestResult?: any
   resultsPath?: string
   logPath?: string
@@ -190,6 +207,7 @@ export default function HyperoptsPage() {
                     </div>
                     <div>
                       <p><span className="font-medium">{t('lossFunction')}:</span> {hyperopt.lossFunction}</p>
+                      <p><span className="font-medium">{t('duration')}:</span> {formatDuration(hyperopt.duration)}</p>
                       {hyperopt.timerange && (
                         <p><span className="font-medium">{t('timerange')}:</span> {hyperopt.timerange}</p>
                       )}

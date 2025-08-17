@@ -7,6 +7,8 @@ import { mkdir, writeFile, readdir, stat, readFile } from 'fs/promises'
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
 export async function processHyperopt(taskId: string) {
+  const startTime = Date.now()
+  
   try {
     // 更新任务状态为 RUNNING
     await prisma.hyperoptTask.update({
@@ -190,6 +192,8 @@ export async function processHyperopt(taskId: string) {
         }
       }
 
+      const duration = (Date.now() - startTime) / 1000 // 转换为秒
+      
       // 更新任务状态为 COMPLETED
       await prisma.hyperoptTask.update({
         where: { id: taskId },
@@ -198,26 +202,33 @@ export async function processHyperopt(taskId: string) {
           resultsPath: relativeResultsPath,
           bestResult: bestResult ? JSON.stringify(bestResult) : undefined,
           logs: fullLogs,
+          duration: duration,
         },
       })
     } else {
+      const duration = (Date.now() - startTime) / 1000 // 转换为秒
+      
       // 更新任务状态为 FAILED
       await prisma.hyperoptTask.update({
         where: { id: taskId },
         data: {
           status: 'FAILED',
           logs: fullLogs,
+          duration: duration,
         },
       })
     }
   } catch (error) {
     console.error('Error processing hyperopt:', error)
     
+    const duration = (Date.now() - startTime) / 1000 // 转换为秒
+    
     // 更新任务状态为 FAILED
     await prisma.hyperoptTask.update({
       where: { id: taskId },
       data: {
         status: 'FAILED',
+        duration: duration,
       },
     })
   }
