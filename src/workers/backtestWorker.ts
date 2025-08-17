@@ -6,21 +6,14 @@ import path from 'path'
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
-async function findLatestBacktestResult(resultsDir: string): Promise<string | null> {
+async function findLatestBacktestResult(resultsDir: string, taskId: string): Promise<string | null> {
   const fs = await import('fs').then(m => m.promises);
-  const fsSync = await import('fs');
   try {
-    const files = await fs.readdir(resultsDir);
-    const jsonFiles = files
-      // Correctly filter for .meta.json files instead of .zip
-      .filter(f => f.startsWith('backtest-result-') && f.endsWith('.meta.json'))
-      .map(file => ({ file, mtime: fsSync.statSync(path.join(resultsDir, file)).mtime }))
-      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+    const expectedFileName = `backtest-result-cli-${taskId}.meta.json`;
+    const expectedFilePath = path.join(resultsDir, expectedFileName);
 
-    if (jsonFiles.length === 0) {
-      return null;
-    }
-    return path.join(resultsDir, jsonFiles[0].file);
+    await fs.access(expectedFilePath);
+    return expectedFilePath;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       console.warn(`Backtest results directory not found: ${resultsDir}`);
@@ -57,6 +50,7 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
 
     const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || path.join(process.cwd(), 'ft_user_data');
     const containerUserDataPath = process.env.FREQTRADE_CONTAINER_USER_DATA_PATH || '/freqtrade/user_data';
+    const exportFilename = `backtest-result-cli-${taskId}.json`;
 
     // 基础参数
     const args = [
@@ -67,6 +61,7 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       '--strategy-path', path.posix.join(containerUserDataPath, 'strategies'),
       '--timerange', `${task.timerangeStart?.toISOString().split('T')[0].replace(/-/g, '')}-${task.timerangeEnd?.toISOString().split('T')[0].replace(/-/g, '')}`,
       '--export', 'trades',
+      '--export-filename', path.posix.join(containerUserDataPath, 'backtest_results', exportFilename),
       '--cache', 'none',
     ]
 
@@ -114,7 +109,9 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       const log = data.toString()
       logs.push(log)
       redis.publish(`logs:${taskId}`, log)
-      console.error(`[${taskId}] ERROR: ${log}`)
+      // Freqtrade often sends INFO and WARNING to stderr, so we log it as standard output
+      // and will rely on string content for actual error detection.
+      console.log(`[${taskId}] STDERR: ${log}`)
     })
 
     // 等待进程完成
@@ -140,14 +137,13 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
     }
 
     const backtestResultsDir = path.join(userDataPath, 'backtest_results');
-    const resultPath = await findLatestBacktestResult(backtestResultsDir);
+    const resultPath = await findLatestBacktestResult(backtestResultsDir, taskId);
     let resultsSummary = null;
     let plotProfitUrl = null;
     let isSuccess = false;
 
     // Check for explicit errors in logs
-    // Check for explicit errors in logs, as suggested by the user.
-    const hasErrorInLog = fullLogs.includes('freqtrade - ERROR');
+    const hasErrorInLog = fullLogs.includes('freqtrade - ERROR')
 
     if (resultPath) {
       try {
@@ -158,23 +154,19 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
         const fs = await import('fs').then(m => m.promises);
         const resultData = await fs.readFile(resultPath, 'utf8');
 
-        logs.push(`\nAttempting to parse result file content...`);
-        redis.publish(`logs:${taskId}`, `\nAttempting to parse result file content...\n`);
-        console.log(`[${taskId}] Attempting to parse result file content...`);
-
         // An empty file can be created on error, so check for content.
         if (resultData.trim() === '') {
-          throw new Error("Result file is empty.");
+          throw new Error("Main result file is empty.");
         }
 
         const result = JSON.parse(resultData);
 
-        // The result is nested under the strategy name.
-        const strategyName = Object.keys(result.strategy)[0];
+        // The strategy name is the first key in the result object.
+        const strategyName = Object.keys(result)[0];
         if (!strategyName) {
           throw new Error("Strategy name not found in result object.");
         }
-        const strategyResult = result.strategy[strategyName];
+        const strategyResult = result[strategyName];
 
         // Store the entire strategy result object
         resultsSummary = strategyResult;
