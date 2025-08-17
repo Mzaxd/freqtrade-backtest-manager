@@ -28,7 +28,7 @@ export async function POST(
         completedAt: null,
         resultsSummary: Prisma.JsonNull,
         rawOutputPath: null,
-        logs: null,
+        logs: '',
       },
     })
 

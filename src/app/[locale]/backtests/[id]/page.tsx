@@ -62,6 +62,7 @@ export default function BacktestDetailPage() {
   const [sortBy, setSortBy] = useState('open_date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [filters, setFilters] = useState({});
+  const [clearLogCache, setClearLogCache] = useState(false);
 
   const { data: backtest, isLoading, error } = useQuery({
     queryKey: ['backtest', id, page, limit, sortBy, sortOrder, filters],
@@ -80,6 +81,7 @@ export default function BacktestDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backtest', id] })
       queryClient.invalidateQueries({ queryKey: ['backtests'] })
+      setClearLogCache(true);
     },
   })
 
@@ -297,6 +299,7 @@ export default function BacktestDetailPage() {
                 <RealtimeLogViewer
                   logSourceUrl={`/api/backtests/${id}/logs/stream`}
                   initialLogs={typedBacktest.logs}
+                  clearCache={clearLogCache}
                 />
               </CardContent>
             </Card>

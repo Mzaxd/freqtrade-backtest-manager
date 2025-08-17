@@ -77,7 +77,22 @@
     "PENDING": "Pending",
     "RUNNING": "Running",
     "COMPLETED": "Completed",
-    "FAILED": "Failed"
+    "FAILED": "Failed",
+    "importData": "Import Market Data",
+    "importDataDescription": "Import market data files from Freqtrade user_data directory",
+    "selectAll": "Select All",
+    "filesCount": "{selected}/{total} files selected",
+    "filesAvailable": "{count} files available for import",
+    "noFilesFound": "No market data files found for import",
+    "importing": "Importing...",
+    "importFiles": "Import {count} files",
+    "importSuccess": "Market data imported successfully",
+    "importFailed": "Import failed: {error}",
+    "exchangeLabel": "Exchange",
+    "pairLabel": "Pair",
+    "timeframeLabel": "Timeframe",
+    "formatLabel": "Format",
+    "sizeLabel": "Size"
   },
   "Backtest": {
     "trades": "Trades",
@@ -126,6 +141,7 @@
     "spaces": "Spaces",
     "lossFunction": "Loss Function",
     "timerange": "Timerange",
+    "duration": "Duration",
     "createdAt": "Created At",
     "completedAt": "Completed At",
     "viewDetails": "View Details",
@@ -200,7 +216,8 @@
       "epochs": "Epochs",
       "spaces": "Spaces",
       "lossFunction": "Loss Function",
-      "timerange": "Time Range"
+      "timerange": "Time Range",
+      "duration": "Duration"
     },
     "bestResult": {
       "title": "Best Result",
@@ -238,12 +255,22 @@
     "StrategyManagement": {
     "title": "Strategy Management",
     "uploadStrategy": "Upload Strategy",
+    "importStrategy": "Import Strategy",
+    "importStrategyDescription": "Import strategy files from Freqtrade user_data directory",
     "createStrategy": "Create Strategy",
     "filename": "Filename",
     "description": "Description",
     "createdAt": "Created At",
     "hyperoptCount": "{count} tasks",
     "view": "View",
+    "className": "Class Name",
+    "sizeLabel": "Size",
+    "selectAll": "Select All",
+    "filesCount": "{selected}/{total} files selected",
+    "filesAvailable": "{count} files available for import",
+    "noStrategyFilesFound": "No strategy files found for import",
+    "importing": "Importing...",
+    "importFiles": "Import {count} files",
     "deleteDialog": {
       "title": "Confirm Delete Strategy",
       "description": "Are you sure you want to delete the strategy \"{strategyName}\"? This action cannot be undone.",
@@ -251,11 +278,20 @@
       "cancel": "Cancel",
       "deleting": "Deleting...",
       "delete": "Delete"
-    }
+    },
+    "cancel": "Cancel"
   },
   "ConfigManagement": {
     "title": "Config Management",
     "newConfig": "New Config",
+    "importConfig": "Import Config",
+    "importConfigDescription": "Import config files from Freqtrade user_data directory",
+    "configNameLabel": "Name",
+    "timeframeLabel": "Timeframe",
+    "exchangeLabel": "Exchange",
+    "noConfigFilesFound": "No config files found for import",
+    "importSuccess": "Config imported successfully",
+    "importFailed": "Import failed: {error}",
     "loading": "Loading config list...",
     "loadFailed": "Load Failed",
     "loadFailedMessage": "Could not retrieve config data from the server.",

@@ -178,15 +178,14 @@ export default function HyperoptDetailPage() {
               <span className="text-sm text-gray-600">
                 {t('createdAt')}: {format(new Date(typedHyperopt.createdAt), 'PPpp')}
               </span>
+              <Button onClick={handleRetry} disabled={retryMutation.isPending} size="sm" variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {retryMutation.isPending ? t('retrying') : t('retry')}
+              </Button>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button onClick={handleRetry} disabled={retryMutation.isPending} size="sm" variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              {retryMutation.isPending ? t('retrying') : t('retry')}
-            </Button>
-            
             {typedHyperopt.status === 'COMPLETED' && typedHyperopt.bestResult && (
               <>
                 <Link href={`/hyperopts/${id}/results`}>
@@ -196,9 +195,9 @@ export default function HyperoptDetailPage() {
                   </Button>
                 </Link>
                 
-                <Button 
-                  onClick={handleApplyToStrategy} 
-                  disabled={applyMutation.isPending} 
+                <Button
+                  onClick={handleApplyToStrategy}
+                  disabled={applyMutation.isPending}
                   size="sm"
                 >
                   <Play className="h-4 w-4 mr-2" />

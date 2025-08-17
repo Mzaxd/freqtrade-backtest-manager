@@ -77,7 +77,22 @@
     "PENDING": "等待中",
     "RUNNING": "运行中",
     "COMPLETED": "已完成",
-    "FAILED": "失败"
+    "FAILED": "失败",
+    "importData": "导入市场数据",
+    "importDataDescription": "从 Freqtrade user_data 目录导入市场数据文件",
+    "selectAll": "全选",
+    "filesCount": "已选择 {selected}/{total} 个文件",
+    "filesAvailable": "{count} 个文件可导入",
+    "noFilesFound": "没有找到可导入的市场数据文件",
+    "importing": "导入中...",
+    "importFiles": "导入 {count} 个文件",
+    "importSuccess": "市场数据导入成功",
+    "importFailed": "导入失败: {error}",
+    "exchangeLabel": "交易所",
+    "pairLabel": "交易对",
+    "timeframeLabel": "时间框架",
+    "formatLabel": "格式",
+    "sizeLabel": "大小"
   },
   "Backtest": {
     "trades": "交易列表",
@@ -126,6 +141,7 @@
     "spaces": "搜索空间",
     "lossFunction": "损失函数",
     "timerange": "时间范围",
+    "duration": "执行时长",
     "createdAt": "创建时间",
     "completedAt": "完成时间",
     "viewDetails": "查看详情",
@@ -200,7 +216,8 @@
       "epochs": "迭代次数",
       "spaces": "搜索空间",
       "lossFunction": "损失函数",
-      "timerange": "时间范围"
+      "timerange": "时间范围",
+      "duration": "执行时长"
     },
     "bestResult": {
       "title": "最佳结果",
@@ -238,12 +255,22 @@
   "StrategyManagement": {
     "title": "策略管理",
     "uploadStrategy": "上传策略",
+    "importStrategy": "导入策略",
+    "importStrategyDescription": "从 Freqtrade user_data 目录导入策略文件",
     "createStrategy": "新建策略",
     "filename": "文件名",
     "description": "描述",
     "createdAt": "创建时间",
     "hyperoptCount": "{count} 个任务",
     "view": "查看",
+    "className": "类名",
+    "sizeLabel": "大小",
+    "selectAll": "全选",
+    "filesCount": "已选择 {selected}/{total} 个文件",
+    "filesAvailable": "{count} 个文件可导入",
+    "noStrategyFilesFound": "没有找到可导入的策略文件",
+    "importing": "导入中...",
+    "importFiles": "导入 {count} 个文件",
     "deleteDialog": {
       "title": "确认删除策略",
       "description": "您确定要删除策略 \"{strategyName}\" 吗？此操作不可撤销。",
@@ -251,11 +278,20 @@
       "cancel": "取消",
       "deleting": "删除中...",
       "delete": "删除"
-    }
+    },
+    "cancel": "取消"
   },
   "ConfigManagement": {
     "title": "配置管理",
     "newConfig": "新建配置",
+    "importConfig": "导入配置",
+    "importConfigDescription": "从 Freqtrade user_data 目录导入配置文件",
+    "configNameLabel": "名称",
+    "timeframeLabel": "时间框架",
+    "exchangeLabel": "交易所",
+    "noConfigFilesFound": "没有找到可导入的配置文件",
+    "importSuccess": "配置导入成功",
+    "importFailed": "导入失败: {error}",
     "loading": "正在加载配置列表...",
     "loadFailed": "加载失败",
     "loadFailedMessage": "无法从服务器获取配置数据。",

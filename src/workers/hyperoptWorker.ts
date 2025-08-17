@@ -63,11 +63,11 @@ export async function processHyperopt(taskId: string) {
       '--print-all',
     ]
 
-    if (task.jobWorkers && task.jobWorkers > 0) {
-      args.push('--job-workers', task.jobWorkers.toString())
-    } else {
-      args.push('--job-workers', '-1') // 使用所有可用CPU核心
-    }
+    // if (task.jobWorkers && task.jobWorkers > 0) {
+    //   args.push('--job-workers', task.jobWorkers.toString())
+    // } else {
+    //   args.push('--job-workers', '-1') // 使用所有可用CPU核心
+    // }
 
     // 如果有时间范围参数，添加到命令中
     if (task.timerange) {
@@ -207,7 +207,7 @@ export async function processHyperopt(taskId: string) {
           resultsPath: relativeResultsPath,
           bestResult: bestResult ? JSON.stringify(bestResult) : undefined,
           logs: fullLogs,
-          duration: duration,
+          // duration: duration,
         },
       })
     } else {
@@ -219,7 +219,7 @@ export async function processHyperopt(taskId: string) {
         data: {
           status: 'FAILED',
           logs: fullLogs,
-          duration: duration,
+          // duration: duration,
         },
       })
     }
@@ -233,7 +233,7 @@ export async function processHyperopt(taskId: string) {
       where: { id: taskId },
       data: {
         status: 'FAILED',
-        duration: duration,
+        // duration: duration,
       },
     })
   }

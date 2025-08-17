@@ -12,7 +12,8 @@ async function findLatestBacktestResult(resultsDir: string): Promise<string | nu
   try {
     const files = await fs.readdir(resultsDir);
     const jsonFiles = files
-      .filter(f => f.startsWith('backtest-result-') && f.endsWith('.zip'))
+      // Correctly filter for .meta.json files instead of .zip
+      .filter(f => f.startsWith('backtest-result-') && f.endsWith('.meta.json'))
       .map(file => ({ file, mtime: fsSync.statSync(path.join(resultsDir, file)).mtime }))
       .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 
@@ -121,6 +122,10 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       child.on('close', resolve)
     })
 
+    logs.push(`\nFreqtrade process finished with exit code: ${exitCode}`);
+    redis.publish(`logs:${taskId}`, `\nFreqtrade process finished with exit code: ${exitCode}\n`);
+    console.log(`[${taskId}] Freqtrade process finished with exit code: ${exitCode}`);
+
     const fullLogs = logs.join('\n')
 
     // 清理临时文件
@@ -134,35 +139,58 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       }
     }
 
-    if (exitCode === 0) {
-      const backtestResultsDir = path.join(userDataPath, 'backtest_results');
-      const resultPath = await findLatestBacktestResult(backtestResultsDir);
-      
-      let resultsSummary = null
-      let plotProfitUrl = null
+    const backtestResultsDir = path.join(userDataPath, 'backtest_results');
+    const resultPath = await findLatestBacktestResult(backtestResultsDir);
+    let resultsSummary = null;
+    let plotProfitUrl = null;
+    let isSuccess = false;
 
-      if (resultPath) {
-        try {
-          const fs = await import('fs').then(m => m.promises)
-          const resultData = await fs.readFile(resultPath, 'utf8')
-          const result = JSON.parse(resultData)
-          
-          // The result is nested under the strategy name.
-          const strategyName = Object.keys(result.strategy)[0];
-          const strategyResult = result.strategy[strategyName];
-          
-          // Store the entire strategy result object
-          resultsSummary = strategyResult;
-          
-        } catch (error) {
-          console.error('Failed to read or process result file:', error)
-          logs.push(`\nError processing result file: ${(error as Error).message}`);
+    // Check for explicit errors in logs
+    // Check for explicit errors in logs, as suggested by the user.
+    const hasErrorInLog = fullLogs.includes('freqtrade - ERROR');
+
+    if (resultPath) {
+      try {
+        logs.push(`\nFound result file: ${resultPath}`);
+        redis.publish(`logs:${taskId}`, `\nFound result file: ${resultPath}\n`);
+        console.log(`[${taskId}] Found result file: ${resultPath}`);
+
+        const fs = await import('fs').then(m => m.promises);
+        const resultData = await fs.readFile(resultPath, 'utf8');
+
+        logs.push(`\nAttempting to parse result file content...`);
+        redis.publish(`logs:${taskId}`, `\nAttempting to parse result file content...\n`);
+        console.log(`[${taskId}] Attempting to parse result file content...`);
+
+        // An empty file can be created on error, so check for content.
+        if (resultData.trim() === '') {
+          throw new Error("Result file is empty.");
         }
-      } else {
-        logs.push('\nWarning: Could not find backtest result file.');
-      }
 
-      // 更新任务状态为 COMPLETED
+        const result = JSON.parse(resultData);
+
+        // The result is nested under the strategy name.
+        const strategyName = Object.keys(result.strategy)[0];
+        if (!strategyName) {
+          throw new Error("Strategy name not found in result object.");
+        }
+        const strategyResult = result.strategy[strategyName];
+
+        // Store the entire strategy result object
+        resultsSummary = strategyResult;
+        isSuccess = true; // Mark as success only if parsing is successful
+
+      } catch (error) {
+        console.error('Failed to read or process result file:', error);
+        const errorMessage = `\nError processing result file: ${(error as Error).message}`;
+        logs.push(errorMessage);
+        redis.publish(`logs:${taskId}`, errorMessage + '\n');
+        isSuccess = false; // Explicitly mark as failed on parsing error
+      }
+    }
+
+    // Final decision based on multiple factors
+    if (isSuccess && !hasErrorInLog) {
       await prisma.backtestTask.update({
         where: { id: taskId },
         data: {
@@ -170,20 +198,21 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
           completedAt: new Date(),
           resultsSummary: resultsSummary ?? Prisma.JsonNull,
           rawOutputPath: resultPath,
-          plotProfitUrl: null,
+          plotProfitUrl: null, // This can be populated later
           logs: logs.join('\n'),
         },
-      })
+      });
     } else {
-      // 更新任务状态为 FAILED
+      // Fail if parsing failed, no file was found, or there's an explicit error in the log.
       await prisma.backtestTask.update({
         where: { id: taskId },
         data: {
           status: 'FAILED',
           completedAt: new Date(),
           logs: fullLogs,
+          rawOutputPath: resultPath, // Still save the path for debugging
         },
-      })
+      });
     }
   } catch (error) {
     console.error('Error processing backtest:', error)

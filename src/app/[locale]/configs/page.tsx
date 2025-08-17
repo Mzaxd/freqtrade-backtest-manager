@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { PlusCircle, Edit, Trash2, AlertTriangle, Loader2 } from 'lucide-react'
+import { PlusCircle, Edit, Trash2, AlertTriangle, Loader2, Download } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,6 +16,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslations } from 'next-intl'
@@ -48,15 +59,42 @@ const deleteConfig = async (id: number): Promise<void> => {
   }
 }
 
+async function getImportableConfigs() {
+  const response = await fetch('/api/configs/import')
+  if (!response.ok) throw new Error('Failed to fetch importable configs')
+  const result = await response.json()
+  return result.data?.files ?? []
+}
+
+async function importConfigs(filenames: string[]) {
+  const response = await fetch('/api/configs/import', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ filenames }),
+  })
+  if (!response.ok) throw new Error('Failed to import configs')
+  return response.json()
+}
+
 export default function ConfigsPage() {
   const t = useTranslations('ConfigManagement')
   const queryClient = useQueryClient()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [selectedConfig, setSelectedConfig] = useState<ConfigListItem | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([])
 
   const { data: configs, isLoading, isError, error: queryError } = useQuery<ConfigListItem[]>({
     queryKey: ['configs'],
     queryFn: fetchConfigs,
+  })
+
+  const { data: importableFiles, isLoading: isLoadingImportable } = useQuery({
+    queryKey: ['importable-configs'],
+    queryFn: getImportableConfigs,
+    enabled: isImportDialogOpen,
   })
 
   const { mutate: deleteMutate, isPending: isDeleting, error: deleteError, reset } = useMutation({
@@ -68,6 +106,20 @@ export default function ConfigsPage() {
     },
     onError: (error: Error) => {
       toast.error(`${t('deleteFailed')}: ${error.message}`)
+    }
+  })
+
+  const { mutate: performImport, isPending: isImporting } = useMutation({
+    mutationFn: importConfigs,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['configs'] })
+      queryClient.invalidateQueries({ queryKey: ['importable-configs'] })
+      setIsImportDialogOpen(false)
+      setSelectedFiles([])
+      toast.success(t('importSuccess'))
+    },
+    onError: (error: Error) => {
+      toast.error(t('importFailed', { error: error.message }))
     }
   })
 
@@ -83,16 +135,122 @@ export default function ConfigsPage() {
     }
   }
 
+  const handleFileSelection = (filename: string, checked: boolean) => {
+    if (checked) {
+      setSelectedFiles(prev => [...prev, filename])
+    } else {
+      setSelectedFiles(prev => prev.filter(f => f !== filename))
+    }
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedFiles(importableFiles?.map(f => f.filename) || [])
+    } else {
+      setSelectedFiles([])
+    }
+  }
+
+  const handleImport = () => {
+    if (selectedFiles.length > 0) {
+      performImport(selectedFiles)
+    }
+  }
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <Button asChild>
-          <Link href="/configs/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            {t('newConfig')}
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild>
+            <Link href="/configs/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              {t('newConfig')}
+            </Link>
+          </Button>
+          <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Download className="w-4 h-4 mr-2" />
+                {t('importConfig')}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{t('importConfig')}</DialogTitle>
+                <DialogDescription>
+                  {t('importConfigDescription')}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="select-all"
+                      checked={selectedFiles.length === (importableFiles?.length || 0)}
+                      onCheckedChange={handleSelectAll}
+                    />
+                    <label htmlFor="select-all" className="text-sm font-medium">
+                      {t('selectAll')} ({selectedFiles.length}/{importableFiles?.length || 0})
+                    </label>
+                  </div>
+                  <Badge variant="secondary">
+                    {t('filesAvailable', { count: importableFiles?.length || 0 })}
+                  </Badge>
+                </div>
+                
+                {isLoadingImportable ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto border rounded-md">
+                    {importableFiles?.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        {t('noConfigFilesFound')}
+                      </div>
+                    ) : (
+                      importableFiles?.map((file: any) => (
+                        <div key={file.filename} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-md">
+                          <Checkbox
+                            id={`file-${file.filename}`}
+                            checked={selectedFiles.includes(file.filename)}
+                            onCheckedChange={(checked) => handleFileSelection(file.filename, checked as boolean)}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <label htmlFor={`file-${file.filename}`} className="text-sm font-medium cursor-pointer">
+                              {file.filename}
+                            </label>
+                            <div className="text-xs text-muted-foreground">
+                              {file.name && <span className="mr-2">{t('configNameLabel')}: {file.name}</span>}
+                              {file.timeframe && <span className="mr-2">{t('timeframeLabel')}: {file.timeframe}</span>}
+                              {file.exchange && <span className="mr-2">{t('exchangeLabel')}: {file.exchange}</span>}
+                              <span>{t('sizeLabel')}: {(file.size / 1024).toFixed(1)} KB</span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(file.lastModified).toLocaleDateString()}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+                  {t('cancel')}
+                </Button>
+                <Button 
+                  onClick={handleImport} 
+                  disabled={selectedFiles.length === 0 || isImporting}
+                >
+                  {isImporting ? t('importing') : t('importFiles', { count: selectedFiles.length })}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {isLoading && (

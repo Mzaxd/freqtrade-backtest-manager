@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Download } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -26,9 +27,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from 'sonner'
@@ -57,11 +68,32 @@ async function fetchMarketData(searchTerm: string) {
   return res.json()
 }
 
+async function getImportableMarketData() {
+  const response = await fetch('/api/market-data/import')
+  if (!response.ok) throw new Error('Failed to fetch importable market data')
+  const result = await response.json()
+  return result.data?.files ?? []
+}
+
+async function importMarketData(files: any[]) {
+  const response = await fetch('/api/market-data/import', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ files }),
+  })
+  if (!response.ok) throw new Error('Failed to import market data')
+  return response.json()
+}
+
 export default function DataPage() {
   const queryClient = useQueryClient()
   const t = useTranslations('DataManagement');
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<any[]>([])
 
   const { data, isLoading } = useQuery({
     queryKey: ['marketData', searchTerm],
@@ -76,6 +108,12 @@ export default function DataPage() {
       return res.json()
     },
     refetchInterval: 5000,
+  })
+
+  const { data: importableFiles, isLoading: isLoadingImportable } = useQuery({
+    queryKey: ['importable-market-data'],
+    queryFn: getImportableMarketData,
+    enabled: isImportDialogOpen,
   })
 
   const form = useForm<DownloadFormValues>({
@@ -131,12 +169,48 @@ export default function DataPage() {
     },
   })
 
+  const { mutate: performImport, isPending: isImporting } = useMutation({
+    mutationFn: importMarketData,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketData'] })
+      queryClient.invalidateQueries({ queryKey: ['importable-market-data'] })
+      setIsImportDialogOpen(false)
+      setSelectedFiles([])
+      toast.success(t('importSuccess'))
+    },
+    onError: (error) => {
+      toast.error(t('importFailed', { error: error.message }))
+    }
+  })
+
   function onSubmit(values: DownloadFormValues) {
     downloadMutation.mutate(values)
   }
 
   const handleDelete = (id: number) => {
     deleteMutation.mutate(id)
+  }
+
+  const handleFileSelection = (file: any, checked: boolean) => {
+    if (checked) {
+      setSelectedFiles(prev => [...prev, file])
+    } else {
+      setSelectedFiles(prev => prev.filter(f => f.filename !== file.filename))
+    }
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedFiles(importableFiles || [])
+    } else {
+      setSelectedFiles([])
+    }
+  }
+
+  const handleImport = () => {
+    if (selectedFiles.length > 0) {
+      performImport(selectedFiles)
+    }
   }
   
   const mergedData = data?.map((market: any) => {
@@ -152,7 +226,92 @@ export default function DataPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">{t('title')}</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
+        <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              {t('importData')}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t('importData')}</DialogTitle>
+              <DialogDescription>
+                {t('importDataDescription')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="select-all"
+                    checked={selectedFiles.length === (importableFiles?.length || 0)}
+                    onCheckedChange={handleSelectAll}
+                  />
+                  <label htmlFor="select-all" className="text-sm font-medium">
+                    {t('selectAll')} ({selectedFiles.length}/{importableFiles?.length || 0})
+                  </label>
+                </div>
+                <Badge variant="secondary">
+                  {t('filesAvailable', { count: importableFiles?.length || 0 })}
+                </Badge>
+              </div>
+              
+              {isLoadingImportable ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto border rounded-md">
+                  {importableFiles?.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {t('noFilesFound')}
+                    </div>
+                  ) : (
+                    importableFiles?.map((file: any) => (
+                      <div key={file.filename} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-md">
+                        <Checkbox
+                          id={`file-${file.filename}`}
+                          checked={selectedFiles.some(f => f.filename === file.filename)}
+                          onCheckedChange={(checked) => handleFileSelection(file, checked as boolean)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <label htmlFor={`file-${file.filename}`} className="text-sm font-medium cursor-pointer">
+                            {file.filename}
+                          </label>
+                          <div className="text-xs text-muted-foreground">
+                            <span className="mr-2">{t('exchangeLabel')}: {file.exchange}</span>
+                            <span className="mr-2">{t('pairLabel')}: {file.pair}</span>
+                            <span className="mr-2">{t('timeframeLabel')}: {file.timeframe}</span>
+                            <span className="mr-2">{t('formatLabel')}: {file.format}</span>
+                            <span>{t('sizeLabel')}: {(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(file.lastModified).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+                {t('cancel')}
+              </Button>
+              <Button 
+                onClick={handleImport} 
+                disabled={selectedFiles.length === 0 || isImporting}
+              >
+                {isImporting ? t('importing') : t('importFiles', { count: selectedFiles.length })}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
       
       <Card className="mb-8">
         <CardHeader>
