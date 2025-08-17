@@ -56,6 +56,7 @@ const downloadSchema = z.object({
   timerangeStart: z.string().optional(),
   timerangeEnd: z.string().optional(),
   format: z.enum(['json', 'feather']),
+  marketType: z.enum(['spot', 'futures']),
 })
 
 type DownloadFormValues = z.infer<typeof downloadSchema>
@@ -125,6 +126,7 @@ export default function DataPage() {
       timerangeStart: '',
       timerangeEnd: '',
       format: 'json',
+      marketType: 'spot',
     },
   })
 
@@ -320,26 +322,49 @@ export default function DataPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
-                control={form.control}
-                name="exchange"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('exchange')}</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('selectExchange')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {exchanges.map(ex => <SelectItem key={ex} value={ex}>{ex}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <FormField
+                  control={form.control}
+                  name="exchange"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('exchange')}</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('selectExchange')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {exchanges.map(ex => <SelectItem key={ex} value={ex}>{ex}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="marketType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('marketType')}</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('selectMarketType')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="spot">{t('spot')}</SelectItem>
+                          <SelectItem value="futures">{t('futures')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <FormField
                   control={form.control}

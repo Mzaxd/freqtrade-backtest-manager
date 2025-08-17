@@ -54,6 +54,10 @@ export async function processDataDownload(jobId: string) {
       '--timeframes', ...job.timeframes,
     ]
 
+    if (job.marketType === 'futures') {
+      args.push('--trading-mode', 'futures');
+    }
+
     // Always specify the data format for candles, using the specific ohlcv flag
     args.push('--data-format-ohlcv', job.format || 'json');
 
