@@ -41,15 +41,17 @@ export function Navigation() {
                 ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 font-medium' 
                 : 'text-gray-600 hover:text-black hover:bg-gray-100 dark:hover:bg-gray-700'
               }
+              ${loadingLink === item.href ? 'animate-pulse' : ''}
             `}
             onClick={() => setLoadingLink(item.href)}
           >
-            {loadingLink === item.href ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              item.icon
-            )}
+            {item.icon}
             <span>{item.label}</span>
+            {loadingLink === item.href && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 animate-pulse"></div>
+              </div>
+            )}
           </Link>
         ))}
       </div>
