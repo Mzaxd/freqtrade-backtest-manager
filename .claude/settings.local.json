@@ -32,7 +32,9 @@
       "Bash(pnpm worker:*)",
       "Bash(python3:*)",
       "Bash(sed:*)",
-      "Bash(pnpm approve-builds:*)"
+      "Bash(pnpm approve-builds:*)",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_wait_for"
     ],
     "defaultMode": "acceptEdits"
   }

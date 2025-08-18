@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Loader2, Save, X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 interface StrategyEditorProps {
   strategy: {
@@ -18,15 +19,26 @@ interface StrategyEditorProps {
     filename: string
     className: string
     description?: string
+    content?: string
   } | null
   isOpen: boolean
   onClose: () => void
-  onSave: (content: string) => Promise<void>
+  onSave: (content: string) => Promise<void> | void
   onCreate?: (filename: string, content: string) => Promise<void>
   mode?: 'edit' | 'create'
+  showModal?: boolean
 }
 
-export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCreate, mode = 'edit' }: StrategyEditorProps) {
+export default function StrategyEditor({
+  strategy,
+  isOpen,
+  onClose,
+  onSave,
+  onCreate,
+  mode = 'edit',
+  showModal = true
+}: StrategyEditorProps) {
+  const t = useTranslations('StrategyDetail')
   const [code, setCode] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -58,7 +70,7 @@ export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCr
       const response = await fetch(`/api/strategies/${strategy.id}/content`)
       if (response.ok) {
         const data = await response.json()
-        setCode(data.content || '')
+        setCode(data.data.content || '')
       }
     } catch (error) {
       console.error('Failed to load strategy content:', error)
@@ -113,19 +125,66 @@ export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCr
     }
   }, [strategy, isOpen, mode])
 
+  const editorContent = (
+    <div className="h-full flex flex-col">
+      <div className="flex-1 relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        )}
+        
+        <Editor
+          height="100%"
+          language="python"
+          value={code}
+          onChange={(value) => setCode(value || '')}
+          theme="vs-dark"
+          options={{
+            minimap: { enabled: false },
+            fontSize: 14,
+            lineNumbers: 'on',
+            roundedSelection: false,
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            wordWrap: 'on',
+            folding: true,
+            showFoldingControls: 'always',
+          }}
+          onMount={handleEditorDidMount}
+        />
+      </div>
+      
+      <div className="px-6 py-4 border-t flex justify-end">
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          {t('save')}
+        </Button>
+      </div>
+    </div>
+  )
+
+  if (!showModal) {
+    return <div className="h-[70vh]">{editorContent}</div>
+  }
+
   if (mode === 'create') {
     return (
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="h-[90vh] flex flex-col p-0 sm:max-w-[80vw]">
           <DialogHeader className="px-6 pt-6 pb-4 border-b">
             <DialogTitle className="flex items-center gap-2">
-              <span>创建新策略</span>
+              <span>{t('createStrategy')}</span>
             </DialogTitle>
           </DialogHeader>
           
           <div className="px-6 py-4 border-b space-y-4">
             <div>
-              <label className="text-sm font-medium">文件名</label>
+              <label className="text-sm font-medium">{t('filename')}</label>
               <input
                 type="text"
                 value={filename}
@@ -135,7 +194,7 @@ export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCr
               />
             </div>
             <div>
-              <label className="text-sm font-medium">类名</label>
+              <label className="text-sm font-medium">{t('className')}</label>
               <input
                 type="text"
                 value={className}
@@ -145,7 +204,7 @@ export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCr
               />
             </div>
             <div>
-              <label className="text-sm font-medium">描述</label>
+              <label className="text-sm font-medium">{t('description')}</label>
               <input
                 type="text"
                 value={description}
@@ -186,7 +245,7 @@ export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCr
           <DialogFooter className="px-6 py-4 border-t">
             <Button variant="outline" onClick={onClose} disabled={isSaving}>
               <X className="w-4 h-4 mr-2" />
-              取消
+              {t('cancel')}
             </Button>
             <Button onClick={handleSave} disabled={isSaving || !filename || !code}>
               {isSaving ? (
@@ -194,7 +253,7 @@ export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCr
               ) : (
                 <Save className="w-4 h-4 mr-2" />
               )}
-              创建
+              {t('createStrategy')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -209,7 +268,7 @@ export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCr
       <DialogContent className="h-[90vh] flex flex-col p-0 sm:max-w-[80vw]">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
-            <span>编辑策略: {strategy.className}</span>
+            <span>{t('editStrategy')}: {strategy.className}</span>
             <span className="text-sm text-muted-foreground">({strategy.filename})</span>
           </DialogTitle>
         </DialogHeader>
@@ -245,7 +304,7 @@ export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCr
         <DialogFooter className="px-6 py-4 border-t">
           <Button variant="outline" onClick={onClose} disabled={isSaving}>
             <X className="w-4 h-4 mr-2" />
-            取消
+            {t('cancel')}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
@@ -253,7 +312,7 @@ export default function StrategyEditor({ strategy, isOpen, onClose, onSave, onCr
             ) : (
               <Save className="w-4 h-4 mr-2" />
             )}
-            保存
+            {t('save')}
           </Button>
         </DialogFooter>
       </DialogContent>

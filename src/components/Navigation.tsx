@@ -3,7 +3,7 @@
 import {useTranslations} from 'next-intl';
 import {Link} from '@/navigation';
 import {usePathname} from 'next/navigation';
-import {Loader2} from 'lucide-react';
+import {Bot, Database, FileCode, History, LayoutDashboard, Loader2, Wrench} from 'lucide-react';
 import {useState} from 'react';
 
 export function Navigation() {
@@ -12,16 +12,19 @@ export function Navigation() {
   const [loadingLink, setLoadingLink] = useState<string | null>(null);
 
   const navItems = [
-    { href: '/dashboard' as const, label: t('dashboard') },
-    { href: '/backtests' as const, label: t('backtest_history') },
-    { href: '/hyperopts' as const, label: t('hyperopt_history') },
-    { href: '/strategies' as const, label: t('strategy_management') },
-    { href: '/configs' as const, label: t('config_management') },
-    { href: '/data' as const, label: t('data_management') },
+    { href: '/dashboard' as const, label: t('dashboard'), icon: <LayoutDashboard className="h-4 w-4" /> },
+    { href: '/strategies' as const, label: t('strategy_management'), icon: <FileCode className="h-4 w-4" /> },
+    { href: '/configs' as const, label: t('config_management'), icon: <Wrench className="h-4 w-4" /> },
+    { href: '/data' as const, label: t('data_management'), icon: <Database className="h-4 w-4" /> },
+    { href: '/backtests' as const, label: t('backtest_history'), icon: <History className="h-4 w-4" /> },
+    { href: '/hyperopts' as const, label: t('hyperopt_history'), icon: <Bot className="h-4 w-4" /> },
   ];
 
   const isActive = (href: string) => {
-    return pathname === href || pathname.startsWith(href + '/');
+    if (href === '/strategies') {
+      return pathname.startsWith('/strategies');
+    }
+    return pathname === href;
   };
 
   return (
@@ -43,7 +46,9 @@ export function Navigation() {
           >
             {loadingLink === item.href ? (
               <Loader2 className="h-4 w-4 animate-spin" />
-            ) : null}
+            ) : (
+              item.icon
+            )}
             <span>{item.label}</span>
           </Link>
         ))}

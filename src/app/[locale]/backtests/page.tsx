@@ -17,9 +17,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Trash2, RefreshCw } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 
 // 定义类型
 interface Strategy {
@@ -57,9 +65,10 @@ interface BacktestTask {
   config?: Config
 }
 
-async function getBacktests() {
+async function getBacktests(strategyId?: string) {
   console.log('[DEBUG] 开始获取回测数据...')
-  const response = await fetch('/api/backtests')
+  const url = strategyId ? `/api/backtests?strategyId=${strategyId}` : '/api/backtests'
+  const response = await fetch(url)
   if (!response.ok) throw new Error('Failed to fetch backtests')
   const data = await response.json()
   console.log('[DEBUG] 获取到的回测数据:', data);
@@ -67,12 +76,26 @@ async function getBacktests() {
   return data
 }
 
+async function getStrategies() {
+  const response = await fetch('/api/strategies')
+  if (!response.ok) throw new Error('Failed to fetch strategies')
+  return response.json()
+}
+
 export default function BacktestsPage() {
   const t = useTranslations('BacktestHistory');
+  const [selectedStrategy, setSelectedStrategy] = useState<string | undefined>()
+
   const { data: backtests, isLoading } = useQuery({
-    queryKey: ['backtests'],
-    queryFn: getBacktests,
+    queryKey: ['backtests', selectedStrategy],
+    queryFn: () => getBacktests(selectedStrategy),
   });
+
+  const { data: strategiesData } = useQuery({
+    queryKey: ['strategies'],
+    queryFn: getStrategies,
+  })
+  const strategies = strategiesData?.data || []
 
   const queryClient = useQueryClient();
 
@@ -161,6 +184,22 @@ export default function BacktestsPage() {
         <Link href="/backtests/new">
           <Button>{t('newBacktest')}</Button>
         </Link>
+      </div>
+
+      <div className="mb-6">
+        <Select onValueChange={(value) => setSelectedStrategy(value === 'all' ? undefined : value)} value={selectedStrategy || 'all'}>
+          <SelectTrigger className="w-[280px]">
+            <SelectValue placeholder={t('filterByStrategy')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('allStrategies')}</SelectItem>
+            {strategies.map((strategy: Strategy) => (
+              <SelectItem key={strategy.id} value={String(strategy.id)}>
+                {strategy.className}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-4">

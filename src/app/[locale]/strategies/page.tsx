@@ -3,10 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Upload, Trash2, Edit, Plus, Zap, Download } from 'lucide-react'
+import { Upload, Trash2, Edit, Plus, Zap, Download, Rocket } from 'lucide-react'
 import { format } from 'date-fns'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import StrategyEditor from '@/components/strategy-editor'
 import {
@@ -176,7 +177,7 @@ export default function StrategiesPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedFiles(importableFiles?.map(f => f.filename) || [])
+      setSelectedFiles(importableFiles?.map((f: { filename: string }) => f.filename) || [])
     } else {
       setSelectedFiles([])
     }
@@ -266,7 +267,7 @@ export default function StrategiesPage() {
                         {t('noStrategyFilesFound')}
                       </div>
                     ) : (
-                      importableFiles?.map((file: any) => (
+                      importableFiles?.map((file: { filename: string, className: string, size: number, lastModified: string }) => (
                         <div key={file.filename} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-md">
                           <Checkbox
                             id={`file-${file.filename}`}
@@ -308,103 +309,172 @@ export default function StrategiesPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {strategies?.map((strategy: any) => (
-          <Card key={strategy.id}>
-            <CardHeader>
-              <CardTitle className="text-lg flex justify-between items-center">
-                {strategy.className}
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                    onClick={() => {
-                      setSelectedStrategy(strategy)
-                      setIsEditDialogOpen(true)
-                    }}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog open={isDeleteDialogOpen && selectedStrategy?.id === strategy.id} onOpenChange={(open) => {
-                    if (!open) {
-                      setSelectedStrategy(null)
-                      setIsDeleteDialogOpen(false)
-                    }
-                  }}>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => {
-                          setSelectedStrategy(strategy)
-                          setIsDeleteDialogOpen(true)
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {t('deleteDialog.description', { strategyName: selectedStrategy?.className })}
-                        {error && <p className="text-red-500 mt-2">{t('deleteDialog.error', { error: (error as Error).message })}</p>}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => performDelete(selectedStrategy.id)}
-                        className="bg-red-500 hover:bg-red-600"
-                        disabled={isDeleting}
-                      >
-                        {isDeleting ? t('deleteDialog.deleting') : t('deleteDialog.delete')}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div>
-                  <span className="text-sm text-muted-foreground">{t('filename')}:</span>
-                  <span className="text-sm">{strategy.filename}</span>
-                </div>
-                {strategy.description && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">{t('description')}:</span>
-                    <span className="text-sm">{strategy.description}</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-sm text-muted-foreground">{t('createdAt')}:</span>
-                  <span className="text-sm">
-                    {format(new Date(strategy.createdAt), 'PP')}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Hyperopt:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">
-                      {t('hyperoptCount', { count: strategy._count?.hyperoptTasks || 0 })}
-                    </span>
+        {strategies?.map((strategy: { id: number; className: string; filename: string; description: string; createdAt: string; _count: { backtestTasks: number; hyperoptTasks: number; }; }) => (
+          <Link
+            href={`/strategies/${strategy.id}`}
+            key={strategy.id}
+            className="block hover:shadow-lg transition-shadow duration-200 rounded-lg"
+          >
+            <Card className="h-full flex flex-col">
+              <CardHeader>
+                <CardTitle className="text-lg flex justify-between items-center">
+                  <span className="truncate">{strategy.className}</span>
+                  <div className="flex gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => router.push(`/hyperopts?strategy=${strategy.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        setSelectedStrategy(strategy)
+                        setIsEditDialogOpen(true)
+                      }}
                     >
-                      <Zap className="w-4 h-4 mr-1" />
-                      {t('view')}
+                      <Edit className="w-4 h-4" />
                     </Button>
+                    <AlertDialog
+                      open={isDeleteDialogOpen && selectedStrategy?.id === strategy.id}
+                      onOpenChange={(open) => {
+                        if (!open) {
+                          setSelectedStrategy(null)
+                          setIsDeleteDialogOpen(false)
+                        }
+                      }}
+                    >
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                            setSelectedStrategy(strategy)
+                            setIsDeleteDialogOpen(true)
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                        }}
+                      >
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {t('deleteDialog.title')}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t('deleteDialog.description', {
+                              strategyName: selectedStrategy?.className,
+                            })}
+                            {error && (
+                              <p className="text-red-500 mt-2">
+                                {t('deleteDialog.error', {
+                                  error: (error as Error).message,
+                                })}
+                              </p>
+                            )}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {t('deleteDialog.cancel')}
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => performDelete(selectedStrategy.id)}
+                            className="bg-red-500 hover:bg-red-600"
+                            disabled={isDeleting}
+                          >
+                            {isDeleting
+                              ? t('deleteDialog.deleting')
+                              : t('deleteDialog.delete')}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow flex flex-col justify-between">
+                <div className="space-y-2 mb-4">
+                  <div>
+                    <span className="text-sm text-muted-foreground">
+                      {t('filename')}:
+                    </span>
+                    <span className="text-sm ml-1">{strategy.filename}</span>
+                  </div>
+                  {strategy.description && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">
+                        {t('description')}:
+                      </span>
+                      <span className="text-sm ml-1">
+                        {strategy.description}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-sm text-muted-foreground">
+                      {t('createdAt')}:
+                    </span>
+                    <span className="text-sm ml-1">
+                      {format(new Date(strategy.createdAt), 'PP')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      {t('backtests')}:
+                    </span>
+                    <span className="text-sm font-medium">
+                      {t('taskCount', {
+                        count: strategy._count?.backtestTasks || 0,
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      {t('hyperopts')}:
+                    </span>
+                    <span className="text-sm font-medium">
+                      {t('taskCount', {
+                        count: strategy._count?.hyperoptTasks || 0,
+                      })}
+                    </span>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="grid grid-cols-2 gap-2 mt-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      router.push(`/backtests/new?strategyId=${strategy.id}`)
+                    }}
+                  >
+                    <Rocket className="w-4 h-4 mr-2" />
+                    {t('newBacktest')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      router.push(`/hyperopts/new?strategyId=${strategy.id}`)
+                    }}
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    {t('newHyperopt')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 

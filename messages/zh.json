@@ -129,6 +129,12 @@
     "createdAt": "创建时间",
     "completedAt": "完成时间",
     "viewDetails": "查看详情",
+    "filterByStrategy": "按策略筛选",
+    "allStrategies": "所有策略",
+    "taskName": "任务名称",
+    "status": "状态",
+    "loading": "加载中...",
+    "backtestContentPlaceholder": "与此策略相关的回测结果将在此处显示。",
     "deleteDialog": {
       "title": "你确定吗?",
       "description": "此操作无法撤销。这将永久删除您的回测记录。",
@@ -151,6 +157,11 @@
     "viewDetails": "查看详情",
     "viewResults": "查看结果",
     "generatedBacktests": "生成的回测",
+    "filterByStrategy": "按策略筛选",
+    "allStrategies": "所有策略",
+    "status": "状态",
+    "loading": "加载中...",
+    "hyperoptContentPlaceholder": "与此策略相关的超参优化结果将在此处显示。",
     "deleteDialog": {
       "title": "你确定吗?",
       "description": "此操作无法撤销。这将永久删除您的超参优化记录和所有相关的回测。",
@@ -283,7 +294,12 @@
       "deleting": "删除中...",
       "delete": "删除"
     },
-    "cancel": "取消"
+    "cancel": "取消",
+    "backtests": "回测",
+    "hyperopts": "超参优化",
+    "taskCount": "{count} 个任务",
+    "newBacktest": "新建回测",
+    "newHyperopt": "新建超参优化"
   },
   "ConfigManagement": {
     "title": "配置管理",
@@ -307,6 +323,10 @@
     "noDescription": "暂无描述",
     "lastUpdated": "最后更新",
     "deleteFailed": "删除失败",
+    "selectAll": "全选",
+    "filesAvailable": "{count} 个文件可导入",
+    "cancel": "取消",
+    "importFiles": "导入 {count} 个文件",
     "deleteDialog": {
       "title": "您确定要删除吗?",
       "description": "此操作无法撤销。这将永久删除配置 \"{configName}\"。",
@@ -443,5 +463,26 @@
     "totalEpochs": "总迭代次数: {count}",
     "bestEpoch": "最佳迭代: {epoch} (损失值: {loss})",
     "detailedResults": "详细结果"
+  },
+  "StrategyDetail": {
+    "strategyNotFound": "策略未找到",
+    "newBacktest": "新建回测",
+    "newHyperopt": "新建超参优化",
+    "backtests": "回测",
+    "hyperopts": "超参优化",
+    "sourceCode": "源代码",
+    "backtestHistory": "回测历史",
+    "hyperoptHistory": "超参优化历史",
+    "backtestContentPlaceholder": "与此策略相关的回测结果将在此处显示。",
+    "hyperoptContentPlaceholder": "与此策略相关的超参优化结果将在此处显示。",
+    "sourceContentPlaceholder": "此策略的源代码将在此处显示。",
+    "loading": "加载中...",
+    "save": "保存",
+    "cancel": "取消",
+    "editStrategy": "编辑策略",
+    "createStrategy": "创建策略",
+    "filename": "文件名",
+    "className": "类名",
+    "description": "描述"
   }
 }

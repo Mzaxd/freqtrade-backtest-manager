@@ -4,9 +4,14 @@ import {pathnames} from './navigation';
 
 const locales = ['en', 'zh'];
 
-export default getRequestConfig(async ({locale}) => {
+export default getRequestConfig(async ({requestLocale}) => {
+  // This can either be defined statically at the top-level if your locale
+  // can be determined from `headers()` or `cookies()`, or alternatively
+  // read from the URL
+  const locale = await requestLocale;
+
   // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) {
+  if (!locale || !locales.includes(locale as any)) {
     notFound();
   }
 

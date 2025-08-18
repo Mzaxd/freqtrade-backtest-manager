@@ -9,6 +9,35 @@ const getStrategiesPath = () => {
   return join(userDataPath, 'strategies');
 };
 
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  const strategyId = parseInt(id)
+  if (isNaN(strategyId)) {
+    return NextResponse.json({ error: '无效的策略 ID' }, { status: 400 })
+  }
+
+  try {
+    const strategy = await prisma.strategy.findUnique({
+      where: { id: strategyId },
+    })
+
+    if (!strategy) {
+      return NextResponse.json({ error: '策略未找到' }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true, data: strategy })
+  } catch (error) {
+    console.error('获取策略时发生错误:', error)
+    return NextResponse.json(
+      { error: '获取策略时发生服务器内部错误' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }

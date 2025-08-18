@@ -16,6 +16,7 @@ export async function GET() {
       include: {
         _count: {
           select: {
+            backtestTasks: true,
             hyperoptTasks: true,
           },
         },

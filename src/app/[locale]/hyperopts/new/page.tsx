@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -86,6 +86,8 @@ const LOSS_FUNCTIONS = [
 export default function NewHyperoptPage() {
   const t = useTranslations('NewHyperopt')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const strategyIdFromQuery = searchParams.get('strategyId')
   const [formData, setFormData] = useState({
     name: '',
     strategyId: '',
@@ -107,6 +109,15 @@ export default function NewHyperoptPage() {
     queryKey: ['configs'],
     queryFn: getConfigs,
   })
+
+  useEffect(() => {
+    if (strategyIdFromQuery) {
+      setFormData(prev => ({
+        ...prev,
+        strategyId: strategyIdFromQuery,
+      }))
+    }
+  }, [strategyIdFromQuery])
 
   const mutation = useMutation({
     mutationFn: createHyperopt,
@@ -201,7 +212,11 @@ export default function NewHyperoptPage() {
 
             <div>
               <Label htmlFor="strategy">{t('strategy')}</Label>
-              <Select value={formData.strategyId} onValueChange={(value) => setFormData({ ...formData, strategyId: value })}>
+              <Select
+                value={formData.strategyId}
+                onValueChange={(value) => setFormData({ ...formData, strategyId: value })}
+                disabled={!!strategyIdFromQuery}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder={t('selectStrategy')} />
                 </SelectTrigger>

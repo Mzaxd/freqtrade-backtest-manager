@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hyperoptQueue } from '@/lib/queue'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const strategyId = searchParams.get('strategyId')
+
+    const whereClause: { strategyId?: number } = {}
+    if (strategyId) {
+      whereClause.strategyId = parseInt(strategyId, 10)
+    }
+    
     console.log('[DEBUG] 尝试获取 Hyperopt 任务列表...')
     const hyperopts = await prisma.hyperoptTask.findMany({
+      where: whereClause,
       include: {
         strategy: true,
         config: true,
@@ -45,17 +54,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { 
-      name, 
-      strategyId, 
-      configId, 
-      epochs, 
-      spaces, 
+      strategyId,
+      configId,
+      epochs,
+      spaces,
       lossFunction,
       timerange,
       jobWorkers
     } = body
 
-    if (!name || !strategyId || !configId || !epochs || !spaces || !lossFunction) {
+    if (!strategyId || !configId || !epochs || !spaces || !lossFunction) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -89,7 +97,7 @@ export async function POST(request: NextRequest) {
         spaces,
         lossFunction,
         timerange: timerange || undefined,
-        jobWorkers: jobWorkers || undefined,
+        jobWorkers: jobWorkers ? parseInt(jobWorkers) : undefined,
         status: 'PENDING',
       },
       include: {

@@ -129,6 +129,12 @@
     "createdAt": "Created At",
     "completedAt": "Completed At",
     "viewDetails": "View Details",
+    "filterByStrategy": "Filter by strategy",
+    "allStrategies": "All Strategies",
+    "taskName": "Task Name",
+    "status": "Status",
+    "loading": "Loading...",
+    "backtestContentPlaceholder": "Backtest results associated with this strategy will be displayed here.",
     "deleteDialog": {
       "title": "Are you sure?",
       "description": "This action cannot be undone. This will permanently delete your backtest record.",
@@ -151,6 +157,9 @@
     "viewDetails": "View Details",
     "viewResults": "View Results",
     "generatedBacktests": "Generated Backtests",
+    "status": "Status",
+    "loading": "Loading...",
+    "hyperoptContentPlaceholder": "Hyperopt results associated with this strategy will be displayed here.",
     "deleteDialog": {
       "title": "Are you sure?",
       "description": "This action cannot be undone. This will permanently delete your hyperopt record and all related backtests.",
@@ -283,7 +292,12 @@
       "deleting": "Deleting...",
       "delete": "Delete"
     },
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "backtests": "Backtests",
+    "hyperopts": "Hyperopts",
+    "taskCount": "{count} tasks",
+    "newBacktest": "New Backtest",
+    "newHyperopt": "New Hyperopt"
   },
   "ConfigManagement": {
     "title": "Config Management",
@@ -307,6 +321,10 @@
     "noDescription": "No description",
     "lastUpdated": "Last Updated",
     "deleteFailed": "Delete failed",
+    "selectAll": "Select All",
+    "filesAvailable": "{count} files available",
+    "cancel": "Cancel",
+    "importFiles": "Import {count} files",
     "deleteDialog": {
       "title": "Are you sure you want to delete?",
       "description": "This action cannot be undone. This will permanently delete the config “{configName}”.",
@@ -443,5 +461,26 @@
     "bestEpoch": "Best Epoch: {epoch} (Loss: {loss})",
     "detailedResults": "Detailed Results"
   }
-}
+},
+  "StrategyDetail": {
+    "strategyNotFound": "Strategy Not Found",
+    "newBacktest": "New Backtest",
+    "newHyperopt": "New Hyperopt",
+    "backtests": "Backtests",
+    "hyperopts": "Hyperopts",
+    "sourceCode": "Source Code",
+    "backtestHistory": "Backtest History",
+    "hyperoptHistory": "Hyperopt History",
+    "backtestContentPlaceholder": "Backtest results associated with this strategy will be displayed here.",
+    "hyperoptContentPlaceholder": "Hyperopt results associated with this strategy will be displayed here.",
+    "sourceContentPlaceholder": "The source code for this strategy will be displayed here.",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "editStrategy": "Edit Strategy",
+    "createStrategy": "Create Strategy",
+    "filename": "Filename",
+    "className": "Class Name",
+    "description": "Description"
+  }
 }

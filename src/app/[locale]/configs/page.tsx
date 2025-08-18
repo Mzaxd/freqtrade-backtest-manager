@@ -145,7 +145,7 @@ export default function ConfigsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedFiles(importableFiles?.map(f => f.filename) || [])
+      setSelectedFiles(importableFiles?.map((f: any) => f.filename) || [])
     } else {
       setSelectedFiles([])
     }

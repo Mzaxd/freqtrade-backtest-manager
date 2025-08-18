@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { backtestQueue } from '@/lib/queue'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const strategyId = searchParams.get('strategyId')
+
+    const whereClause: { strategyId?: number } = {}
+    if (strategyId) {
+      whereClause.strategyId = parseInt(strategyId, 10)
+    }
+
     console.log('[DEBUG] 尝试获取回测任务列表...')
     const backtests = await prisma.backtestTask.findMany({
+      where: whereClause,
       include: {
         strategy: true,
         config: true,

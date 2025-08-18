@@ -87,6 +87,7 @@ export default function NewBacktestPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const hyperoptId = searchParams.get('hyperopt')
+  const strategyIdFromQuery = searchParams.get('strategyId')
   
   const [formData, setFormData] = useState({
     name: '',
@@ -128,6 +129,15 @@ export default function NewBacktestPage() {
       }))
     }
   }, [hyperopt])
+
+  useEffect(() => {
+    if (strategyIdFromQuery) {
+      setFormData(prev => ({
+        ...prev,
+        strategyId: strategyIdFromQuery,
+      }))
+    }
+  }, [strategyIdFromQuery])
 
   const removeHyperoptParams = () => {
     setFormData(prev => ({
@@ -279,7 +289,11 @@ export default function NewBacktestPage() {
 
             <div>
               <Label htmlFor="strategy">{t('strategy')}</Label>
-              <Select value={formData.strategyId} onValueChange={(value) => setFormData({ ...formData, strategyId: value })}>
+              <Select
+                value={formData.strategyId}
+                onValueChange={(value) => setFormData({ ...formData, strategyId: value })}
+                disabled={!!hyperoptId || !!strategyIdFromQuery}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder={t('selectStrategy')} />
                 </SelectTrigger>
