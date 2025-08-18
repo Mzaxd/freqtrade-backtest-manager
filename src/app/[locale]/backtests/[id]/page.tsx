@@ -235,13 +235,13 @@ export default function BacktestDetailPage() {
           {typedBacktest.plotProfitUrl ? (
             <Card>
               <CardHeader>
-                <CardTitle>Profit Plot</CardTitle>
+                <CardTitle>{t('analysis.profitPlotTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <iframe
                   src={typedBacktest.plotProfitUrl}
                   className="w-full h-[800px] border-0"
-                  title="Profit Plot"
+                  title={t('analysis.profitPlotTitle')}
                 />
               </CardContent>
             </Card>

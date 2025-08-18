@@ -190,7 +190,7 @@ export default function StrategyEditor({
                 value={filename}
                 onChange={(e) => setFilename(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
-                placeholder="my_strategy.py"
+                placeholder={t('filenamePlaceholder')}
               />
             </div>
             <div>
@@ -200,7 +200,7 @@ export default function StrategyEditor({
                 value={className}
                 onChange={(e) => setClassName(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
-                placeholder="MyStrategy"
+                placeholder={t('classNamePlaceholder')}
               />
             </div>
             <div>
@@ -210,7 +210,7 @@ export default function StrategyEditor({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
-                placeholder="Strategy description"
+                placeholder={t('descriptionPlaceholder')}
               />
             </div>
           </div>

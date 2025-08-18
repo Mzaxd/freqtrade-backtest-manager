@@ -392,7 +392,8 @@
       "generating": "Generating chart...",
       "generate": "Generate Chart",
       "generateFailed": "Failed to generate chart",
-      "pending": "Chart will be displayed here after the backtest is successful."
+      "pending": "Chart will be displayed here after the backtest is successful.",
+      "profitPlotTitle": "Profit Plot"
     },
     "logs": {
       "title": "Logs",
@@ -481,6 +482,14 @@
     "createStrategy": "Create Strategy",
     "filename": "Filename",
     "className": "Class Name",
-    "description": "Description"
+    "description": "Description",
+    "filenamePlaceholder": "my_strategy.py",
+    "classNamePlaceholder": "MyStrategy",
+    "descriptionPlaceholder": "Strategy description"
+  },
+  "Autocomplete": {
+    "selectOption": "Select an option",
+    "searchPlaceholder": "Search...",
+    "noResultsFound": "No results found."
   }
 }

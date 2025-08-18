@@ -394,7 +394,8 @@
       "generating": "正在生成图表...",
       "generate": "生成图表",
       "generateFailed": "生成图表失败",
-      "pending": "回测成功后将在此处显示图表。"
+      "pending": "回测成功后将在此处显示图表。",
+      "profitPlotTitle": "收益图表"
     },
     "logs": {
       "title": "日志",
@@ -483,6 +484,14 @@
     "createStrategy": "创建策略",
     "filename": "文件名",
     "className": "类名",
-    "description": "描述"
+    "description": "描述",
+    "filenamePlaceholder": "my_strategy.py",
+    "classNamePlaceholder": "MyStrategy",
+    "descriptionPlaceholder": "策略描述"
+  },
+  "Autocomplete": {
+    "selectOption": "选择一个选项",
+    "searchPlaceholder": "搜索...",
+    "noResultsFound": "未找到结果。"
   }
 }

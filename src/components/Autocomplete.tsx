@@ -3,6 +3,7 @@
 import React from 'react'
 import { useForm, UseFormReturn } from 'react-hook-form'
 import { Check, ChevronsUpDown } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,7 @@ interface AutocompleteProps {
 const Autocomplete: React.FC<AutocompleteProps> = ({ form, name, label, description, fetchUrl }) => {
     const [open, setOpen] = React.useState(false)
     const [options, setOptions] = React.useState<{ label: string; value: string }[]>([])
+    const t = useTranslations('Autocomplete')
 
     React.useEffect(() => {
         const fetchOptions = async () => {
@@ -69,16 +71,16 @@ const Autocomplete: React.FC<AutocompleteProps> = ({ form, name, label, descript
                                         ? options.find(
                                             (option) => option.value === field.value
                                         )?.label
-                                        : 'Select an option'}
+                                        : t('selectOption')}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                             </FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-full p-0">
                             <Command>
-                                <CommandInput placeholder="Search..." />
+                                <CommandInput placeholder={t('searchPlaceholder')} />
                                 <CommandList>
-                                <CommandEmpty>No results found.</CommandEmpty>
+                                <CommandEmpty>{t('noResultsFound')}</CommandEmpty>
                                 <CommandGroup>
                                     {options.map((option) => (
                                         <CommandItem
