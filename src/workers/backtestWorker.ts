@@ -147,7 +147,7 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       '--strategy', task.strategy.className,
       '--strategy-path', path.posix.join(containerUserDataPath, 'strategies'),
       '--timerange', `${task.timerangeStart?.toISOString().split('T')[0].replace(/-/g, '')}-${task.timerangeEnd?.toISOString().split('T')[0].replace(/-/g, '')}`,
-      '--export', 'trades',
+      '--export', 'trades,meta',
       '--export-filename', path.posix.join(containerUserDataPath, 'backtest_results', exportFilename),
       '--cache', 'none',
     ]
@@ -288,10 +288,56 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
         }
         const strategyResult = result[strategyName];
 
-        // Store the entire strategy result object
-        resultsSummary = strategyResult;
+        // Debug: Log the structure of the result
+        console.log(`[${taskId}] Result file structure keys:`, Object.keys(strategyResult));
+        console.log(`[${taskId}] Sample result data:`, JSON.stringify(strategyResult, null, 2).substring(0, 500));
+
+        // Check if this is a meta.json file (contains summary statistics)
+        if (strategyResult.trades && !strategyResult.total_trades) {
+          console.log(`[${taskId}] Detected trades-only file, looking for meta.json...`);
+          // This is a trades file, we need to find the meta.json file
+          const metaFilePath = resultPath.replace('.json', '.meta.json');
+          if (await fileExists(metaFilePath)) {
+            console.log(`[${taskId}] Found meta.json file: ${metaFilePath}`);
+            const metaData = await fs.readFile(metaFilePath, 'utf8');
+            const metaResult = JSON.parse(metaData);
+            const metaStrategyName = Object.keys(metaResult)[0];
+            if (metaStrategyName && metaResult[metaStrategyName]) {
+              // Use the meta.json for summary statistics and keep trades data separate
+              resultsSummary = metaResult[metaStrategyName];
+              console.log(`[${taskId}] Using meta.json for summary statistics`);
+            }
+          } else {
+            console.log(`[${taskId}] No meta.json file found, calculating summary from trades...`);
+            // Calculate summary statistics from trades
+            const trades = strategyResult.trades || [];
+            const wins = trades.filter((t: any) => t.profit_pct > 0).length;
+            const losses = trades.filter((t: any) => t.profit_pct < 0).length;
+            const draws = trades.filter((t: any) => t.profit_pct === 0).length;
+            const totalProfit = trades.reduce((sum: number, t: any) => sum + t.profit_abs, 0);
+            const profitTotal = trades.reduce((sum: number, t: any) => sum + t.profit_pct, 0);
+            
+            resultsSummary = {
+              total_trades: trades.length,
+              wins,
+              losses,
+              draws,
+              profit_total: profitTotal / 100, // Convert percentage to decimal
+              profit_total_abs: totalProfit,
+              stake_currency: 'USDT', // Default, should be from config
+              avg_duration: 'N/A',
+              best_pair: 'N/A',
+              worst_pair: 'N/A',
+            };
+            console.log(`[${taskId}] Calculated summary from trades:`, resultsSummary);
+          }
+        } else {
+          // This is already a meta.json file or contains summary statistics
+          resultsSummary = strategyResult;
+          console.log(`[${taskId}] Using existing summary statistics from result file`);
+        }
+
         isSuccess = true; // Mark as success only if parsing is successful
-        
         console.log(`[${taskId}] Successfully parsed result file for strategy: ${strategyName}`);
 
       } catch (error) {

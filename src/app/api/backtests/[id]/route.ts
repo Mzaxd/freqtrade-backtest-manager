@@ -95,8 +95,17 @@ export async function GET(
 
         if (resultFileContent) {
           const parsedResult = JSON.parse(resultFileContent);
-          if (parsedResult.strategy && parsedResult.strategy[backtest.strategy.className] && parsedResult.strategy[backtest.strategy.className].trades) {
-            allTrades = parsedResult.strategy[backtest.strategy.className].trades;
+          
+          // Handle both strategies object and direct strategy object
+          let strategyData = null;
+          if (parsedResult.strategy && parsedResult.strategy[backtest.strategy.className]) {
+            strategyData = parsedResult.strategy[backtest.strategy.className];
+          } else if (parsedResult[backtest.strategy.className]) {
+            strategyData = parsedResult[backtest.strategy.className];
+          }
+          
+          if (strategyData && strategyData.trades) {
+            allTrades = strategyData.trades;
           }
         }
 
