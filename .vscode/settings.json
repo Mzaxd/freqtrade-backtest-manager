@@ -1,0 +1,28 @@
+{
+  "typescript.preferences.preferTypeOnlyAutoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "debug.node.autoAttach": "on",
+  "debug.internalConsoleOptions": "neverOpen",
+  "debug.allowBreakpointsEverywhere": true,
+  "debug.javascript.autoAttachFilter": "smart",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "files.associations": {
+    "*.ts": "typescript"
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/build": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/dist/**": true,
+    "**/build/**": true
+  }
+}

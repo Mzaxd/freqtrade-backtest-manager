@@ -1,0 +1,61 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Worker",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeExecutable": "tsx",
+      "args": [
+        "--require",
+        "dotenv/config",
+        "${workspaceFolder}/src/workers/index.ts"
+      ],
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "outputCapture": "std"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Specific Backtest Worker",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeExecutable": "tsx",
+      "args": [
+        "--require",
+        "dotenv/config",
+        "${workspaceFolder}/src/workers/index.ts",
+        "--",
+        "--backtest-only"
+      ],
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "outputCapture": "std"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Stack",
+      "configurations": [
+        "Debug Worker",
+        "Debug Next.js"
+      ],
+      "stopAll": true,
+      "presentation": {
+        "hidden": false,
+        "order": 1
+      }
+    }
+  ]
+}

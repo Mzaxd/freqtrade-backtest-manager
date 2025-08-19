@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { format } from 'date-fns'
 import { TradesTable } from "@/components/TradesTable";
+import { EnhancedTradingChart } from "@/components/EnhancedTradingChart";
 
 interface BacktestTask {
   id: string
@@ -63,6 +64,7 @@ export default function BacktestDetailPage() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [filters, setFilters] = useState({});
   const [clearLogCache, setClearLogCache] = useState(false);
+  const [showEnhancedChart, setShowEnhancedChart] = useState(false);
 
   const { data: backtest, isLoading, error } = useQuery({
     queryKey: ['backtest', id, page, limit, sortBy, sortOrder, filters],
@@ -165,6 +167,7 @@ export default function BacktestDetailPage() {
         <TabsList className="justify-start">
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="analysis">{t('tabs.analysis')}</TabsTrigger>
+          <TabsTrigger value="chart">K线图</TabsTrigger>
           <TabsTrigger value="logs">{t('tabs.logs')}</TabsTrigger>
           <TabsTrigger value="trades">{t('tabs.trades')}</TabsTrigger>
         </TabsList>
@@ -270,6 +273,17 @@ export default function BacktestDetailPage() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="chart" className="mt-4">
+          <EnhancedTradingChart 
+            backtestId={id}
+            initialData={backtest ? {
+              candles: [], // 将在组件内部加载
+              trades: (backtest as any).trades || []
+            } : undefined}
+            className="w-full"
+          />
         </TabsContent>
 
         <TabsContent value="trades" className="mt-4">

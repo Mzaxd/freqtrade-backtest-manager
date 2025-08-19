@@ -50,6 +50,10 @@ model BacktestTask {
   trades                 Trade[]
   sourceHyperoptTaskId   String?
   sourceHyperoptTask     HyperoptTask? @relation(name: "GeneratedBacktests", fields: [sourceHyperoptTaskId], references: [id], onDelete: SetNull)
+  // K线图数据文件路径
+  candleDataFile         String?
+  // 数据文件下载任务ID
+  dataDownloadJobId      String?
 }
 
 model Trade {
