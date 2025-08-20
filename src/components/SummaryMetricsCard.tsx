@@ -58,8 +58,22 @@ export const SummaryMetricsCard: React.FC<SummaryMetricsCardProps> = ({ results 
           
           {/* Additional Information */}
           <Metric label="平均持仓时间" value={results.avg_duration} />
-          <Metric label="最佳交易对" value={results.best_pair} />
-          <Metric label="最差交易对" value={results.worst_pair} />
+          <Metric
+            label="最佳交易对"
+            value={
+              results.best_pair
+                ? `${results.best_pair.pair} (${results.best_pair.profit_sum?.toFixed(2)})`
+                : 'N/A'
+            }
+          />
+          <Metric
+            label="最差交易对"
+            value={
+              results.worst_pair
+                ? `${results.worst_pair.pair} (${results.worst_pair.profit_sum?.toFixed(2)})`
+                : 'N/A'
+            }
+          />
         </div>
       </CardContent>
     </Card>

@@ -22,7 +22,7 @@ interface BacktestTask {
   timerangeEnd: string
   createdAt: string
   completedAt: string | null
-  resultsSummary: any
+  summary: any
   plotProfitUrl?: string | null
   logs: string
   strategy: {
@@ -200,36 +200,8 @@ export default function BacktestDetailPage() {
               </CardContent>
             </Card>
 
-            {typedBacktest.resultsSummary && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('results.title')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">{t('results.totalTrades')}</p>
-                      <p className="text-2xl font-bold">{typedBacktest.resultsSummary.total_trades || 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">{t('results.totalProfit')}</p>
-                      <p className="text-2xl font-bold">{typedBacktest.resultsSummary.profit_total || 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">{t('results.profitRate')}</p>
-                      <p className="text-2xl font-bold">{typedBacktest.resultsSummary.profit_total_abs || 0}%</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">{t('results.winRate')}</p>
-                      <p className="text-2xl font-bold">{typedBacktest.resultsSummary.wins || 0} / {typedBacktest.resultsSummary.total_trades || 0}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {typedBacktest.resultsSummary && (
-              <SummaryMetricsCard results={typedBacktest.resultsSummary} />
+            {typedBacktest.summary && (
+              <SummaryMetricsCard results={typedBacktest.summary} />
             )}
           </div>
         </TabsContent>

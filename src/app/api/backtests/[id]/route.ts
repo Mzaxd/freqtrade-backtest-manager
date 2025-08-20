@@ -61,6 +61,7 @@ export async function GET(
     }
 
     let allTrades: Trade[] = [];
+    let summary: Record<string, any> = {};
 
     if (backtest.rawOutputPath && backtest.strategy?.className) {
       let resultFileContent: string | undefined;
@@ -104,8 +105,17 @@ export async function GET(
             strategyData = parsedResult[backtest.strategy.className];
           }
           
-          if (strategyData && strategyData.trades) {
-            allTrades = strategyData.trades;
+          if (strategyData) {
+            if (strategyData.trades) {
+              allTrades = strategyData.trades;
+            }
+            // Extract summary data (all keys except 'trades')
+            summary = Object.keys(strategyData).reduce((acc, key) => {
+              if (key !== 'trades') {
+                acc[key] = strategyData[key];
+              }
+              return acc;
+            }, {} as Record<string, any>);
           }
         }
 
@@ -157,6 +167,7 @@ export async function GET(
       trades: paginatedTrades,
       tradesCount: totalCount,
       exitReasons,
+      summary,
     };
 
     return NextResponse.json(response);
