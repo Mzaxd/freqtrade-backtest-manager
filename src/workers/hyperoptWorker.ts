@@ -4,6 +4,18 @@ import Redis from 'ioredis'
 import path from 'path'
 import { mkdir, writeFile, readdir, stat, readFile } from 'fs/promises'
 
+// Hyperopt result interface
+interface HyperoptResult {
+  loss: number
+  params: Record<string, unknown>
+  [key: string]: unknown
+}
+
+interface HyperoptResults {
+  results: HyperoptResult[]
+  [key: string]: unknown
+}
+
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
 export async function processHyperopt(taskId: string) {
@@ -29,9 +41,18 @@ export async function processHyperopt(taskId: string) {
     const logs: string[] = []
     
     // 构建 freqtrade hyperopt 命令
-    const commandWithArgs = (process.env.FREQTRADE_PATH || 'freqtrade').split(' ')  
-    const command = commandWithArgs[0]
-    const baseArgs = commandWithArgs.slice(1)
+    const freqtradePath = process.env.FREQTRADE_PATH || 'freqtrade';
+    
+    // Command sanitization to prevent injection
+    if (typeof freqtradePath !== 'string' || freqtradePath.length === 0) {
+      throw new Error('Invalid FREQTRADE_PATH');
+    }
+    
+    // Basic sanitization - remove potentially dangerous characters
+    const sanitizedPath = freqtradePath.replace(/[;&|`$(){}<>]/g, '');
+    const commandWithArgs = sanitizedPath.split(' ');
+    const command = commandWithArgs[0];
+    const baseArgs = commandWithArgs.slice(1);
 
     const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || path.join(process.cwd(), 'ft_user_data')
     const containerUserDataPath = process.env.FREQTRADE_CONTAINER_USER_DATA_PATH || '/freqtrade/user_data'
@@ -86,20 +107,26 @@ export async function processHyperopt(taskId: string) {
     })
 
     // 实时日志处理
+    const updateLogs = async (log: string) => {
+      try {
+        const task = await prisma.hyperoptTask.findUnique({ where: { id: taskId } });
+        if (task) {
+          const updatedLogs = (task.logs || '') + log;
+          await prisma.hyperoptTask.update({
+            where: { id: taskId },
+            data: { logs: updatedLogs },
+          });
+        }
+      } catch (error) {
+        console.error('Failed to update hyperopt logs:', error);
+      }
+    };
+
     child.stdout.on('data', (data) => {
       const log = data.toString()
       logs.push(log)
       redis.publish(`hyperopt-logs:${taskId}`, log)
-      // TODO: Prisma client is likely stale. Run `npx prisma generate` to fix type errors.
-      prisma.hyperoptTask.findUnique({ where: { id: taskId } }).then(task => {
-        if (task) {
-          const updatedLogs = (task.logs || '') + log;
-          prisma.hyperoptTask.update({
-            where: { id: taskId },
-            data: { logs: updatedLogs },
-          }).catch(console.error);
-        }
-      });
+      updateLogs(log).catch(console.error);
       console.log(`[Hyperopt ${taskId}] ${log}`)
     })
 
@@ -107,16 +134,7 @@ export async function processHyperopt(taskId: string) {
       const log = data.toString()
       logs.push(log)
       redis.publish(`hyperopt-logs:${taskId}`, log)
-      // TODO: Prisma client is likely stale. Run `npx prisma generate` to fix type errors.
-      prisma.hyperoptTask.findUnique({ where: { id: taskId } }).then(task => {
-        if (task) {
-          const updatedLogs = (task.logs || '') + log;
-          prisma.hyperoptTask.update({
-            where: { id: taskId },
-            data: { logs: updatedLogs },
-          }).catch(console.error);
-        }
-      });
+      updateLogs(log).catch(console.error);
       // Treat stderr as regular log output, as freqtrade often prints info there.
       console.log(`[Hyperopt ${taskId}] ${log}`)
     })
@@ -170,14 +188,14 @@ export async function processHyperopt(taskId: string) {
         ? path.relative(userDataPath, latestHyperoptFile)
         : null;
       
-      let bestResult: any = null;
+      let bestResult: HyperoptResult | null = null;
 
       if (latestHyperoptFile) {
         try {
           // 使用python脚本将pickle文件转换为JSON
           const scriptPath = path.resolve(process.cwd(), 'scripts', 'pickle_to_json.py');
           const jsonOutput = await new Promise<string>((resolve, reject) => {
-            exec(`python ${scriptPath} "${latestHyperoptFile}"`, (error, stdout, stderr) => {
+            exec(`python "${scriptPath}" "${latestHyperoptFile}"`, (error, stdout, stderr) => {
               if (error) {
                 console.error('Python script error:', stderr);
                 return reject(error);
@@ -186,11 +204,19 @@ export async function processHyperopt(taskId: string) {
             });
           });
 
-          const results = JSON.parse(jsonOutput);
+          let results: HyperoptResults | HyperoptResult[];
+          try {
+            results = JSON.parse(jsonOutput) as HyperoptResults | HyperoptResult[];
+          } catch (parseError) {
+            console.error('Failed to parse JSON output:', parseError);
+            throw new Error('Invalid JSON output from Python script');
+          }
           
           if (Array.isArray(results) && results.length > 0) {
             // 假设loss越小越好
-            bestResult = results.reduce((prev, current) => (prev.loss < current.loss) ? prev : current);
+            bestResult = results.reduce((prev: HyperoptResult, current: HyperoptResult) => 
+              (prev.loss < current.loss) ? prev : current
+            );
           }
         } catch (e) {
           console.error('Failed to parse hyperopt results file:', e);

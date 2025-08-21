@@ -451,7 +451,10 @@ export class GestureManager {
     }
 
     if (this.touchPoints.size === 1) {
-      this.startLongPressTimer(this.touchPoints.values().next().value)
+      const touchPoint = this.touchPoints.values().next().value
+      if (touchPoint) {
+        this.startLongPressTimer(touchPoint)
+      }
     }
   }
 

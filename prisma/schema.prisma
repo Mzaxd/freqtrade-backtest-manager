@@ -7,6 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum BacktestStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum HyperoptStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum DataDownloadStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
 model Strategy {
   id            Int            @id @default(autoincrement())
   filename      String         @unique
@@ -31,13 +52,13 @@ model Config {
 }
 
 model BacktestTask {
-  id                     String    @id @default(cuid())
+  id                     String         @id @default(cuid())
   name                   String
-  status                 String
+  status                 BacktestStatus
   timeframe              String?
   timerangeStart         DateTime?
   timerangeEnd           DateTime?
-  createdAt              DateTime  @default(now())
+  createdAt              DateTime       @default(now())
   completedAt            DateTime?
   resultsSummary         Json?
   rawOutputPath          String?
@@ -45,15 +66,19 @@ model BacktestTask {
   logs                   String?
   strategyId             Int
   configId               Int?
-  config                 Config?   @relation(fields: [configId], references: [id])
-  strategy               Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  config                 Config?        @relation(fields: [configId], references: [id])
+  strategy               Strategy       @relation(fields: [strategyId], references: [id], onDelete: Cascade)
   trades                 Trade[]
   sourceHyperoptTaskId   String?
-  sourceHyperoptTask     HyperoptTask? @relation(name: "GeneratedBacktests", fields: [sourceHyperoptTaskId], references: [id], onDelete: SetNull)
+  sourceHyperoptTask     HyperoptTask?  @relation(name: "GeneratedBacktests", fields: [sourceHyperoptTaskId], references: [id], onDelete: SetNull)
   // K线图数据文件路径
   candleDataFile         String?
   // 数据文件下载任务ID
   dataDownloadJobId      String?
+
+  @@index([status])
+  @@index([strategyId])
+  @@index([configId])
 }
 
 model Trade {
@@ -71,6 +96,11 @@ model Trade {
   exit_reason    String
   backtestTaskId String
   backtestTask   BacktestTask @relation(fields: [backtestTaskId], references: [id], onDelete: Cascade)
+
+  @@index([pair])
+  @@index([open_date])
+  @@index([close_date])
+  @@index([backtestTaskId])
 }
 
 model MarketData {
@@ -90,44 +120,50 @@ model MarketData {
 }
 
 model HyperoptTask {
-  id              String    @id @default(cuid())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  status          String    @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  id              String         @id @default(cuid())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  status          HyperoptStatus @default(PENDING) // PENDING, RUNNING, COMPLETED, FAILED
   epochs          Int
-  spaces          String    // 存储逗号分隔的字符串，如 "buy,roi,stoploss"
+  spaces          String[]       // 存储逗号分隔的字符串，如 "buy,roi,stoploss"
   lossFunction    String
   timerange       String?
   jobWorkers      Int?
-  jobId           String?   // BullMQ/Redis中的任务ID
-  duration        Float?    // 任务执行时间（秒）
+  jobId           String?        // BullMQ/Redis中的任务ID
+  duration        Float?         // 任务执行时间（秒）
 
   strategyId      Int
-  strategy        Strategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  strategy        Strategy       @relation(fields: [strategyId], references: [id], onDelete: Cascade)
 
   configId        Int
-  config          Config    @relation(fields: [configId], references: [id], onDelete: Cascade)
+  config          Config         @relation(fields: [configId], references: [id], onDelete: Cascade)
 
-  bestResult      Json?     // 存储最佳结果的简报，用于快速展示
-  resultsPath     String?   // 存储生成的pickle结果文件的路径
-  logPath         String?   // 存储日志文件的路径
-  logs            String?   @db.Text
+  bestResult      Json?          // 存储最佳结果的简报，用于快速展示
+  resultsPath     String?        // 存储生成的pickle结果文件的路径
+  logPath         String?        // 存储日志文件的路径
+  logs            String?        @db.Text
 
   // 关联到此Hyperopt任务生成的所有回测任务
   generatedBacktests BacktestTask[] @relation(name: "GeneratedBacktests")
+
+  @@index([status])
+  @@index([strategyId])
+  @@index([configId])
 }
 
 model DataDownloadJob {
-  id             String    @id @default(cuid())
+  id             String           @id @default(cuid())
   exchange       String
   pairs          String[]
   timeframes     String[]
-  marketType     String    @default("spot")
-  status         String
+  marketType     String           @default("spot")
+  status         DataDownloadStatus // 使用枚举类型
   logs           String?
-  format         String    @default("feather")
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  format         String           @default("feather")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   timerangeEnd   DateTime?
   timerangeStart DateTime?
+
+  @@index([status])
 }

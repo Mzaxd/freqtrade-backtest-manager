@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react'
+import React, { useState, useEffect, ReactNode } from 'react'
 
 export interface ResponsiveLayoutProps {
   children: ReactNode

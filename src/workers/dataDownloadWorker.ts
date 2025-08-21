@@ -2,6 +2,7 @@ import { spawn } from 'child_process'
 import { prisma } from '@/lib/prisma'
 import Redis from 'ioredis'
 import path from 'path'
+import { Prisma } from '@prisma/client'
 // fs and util are no longer needed after removing scanAndSyncData
 // import fs from 'fs/promises'
 // import util from 'util'
@@ -27,7 +28,7 @@ export async function processDataDownload(jobId: string) {
   try {
     await prisma.dataDownloadJob.update({
       where: { id: jobId },
-      data: { status: 'RUNNING' },
+      data: { status: Prisma.DataDownloadStatus.RUNNING },
     });
 
     const job = await prisma.dataDownloadJob.findUnique({
@@ -105,7 +106,7 @@ export async function processDataDownload(jobId: string) {
       await prisma.dataDownloadJob.update({
         where: { id: jobId },
         data: {
-          status: 'COMPLETED',
+          status: Prisma.DataDownloadStatus.COMPLETED,
           logs: fullLogs,
         },
       });
@@ -156,18 +157,18 @@ export async function processDataDownload(jobId: string) {
       await prisma.dataDownloadJob.update({
         where: { id: jobId },
         data: {
-          status: 'FAILED',
+          status: Prisma.DataDownloadStatus.FAILED,
           logs: fullLogs,
         },
       });
     }
-  } catch (error) {
+  } catch (error: any) { // Explicitly type error as any for now, refine later
     console.error('Error processing data download:', error);
     await prisma.dataDownloadJob.update({
       where: { id: jobId },
       data: {
-        status: 'FAILED',
-        logs: error instanceof Error ? error.message : 'Unknown error',
+        status: Prisma.DataDownloadStatus.FAILED,
+        logs: error instanceof Error ? error.message : String(error), // Convert non-Error objects to string
       },
     });
   }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { backtestQueue } from '@/lib/queue'
+import { z } from 'zod'
+import { ConfigData, APIErrorResponse } from '@/types/chart'
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,33 +43,44 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const CreateBacktestRequestSchema = z.object({
+  name: z.string().min(1, 'Backtest name is required'),
+  strategyId: z.number().int().positive('Strategy ID must be a positive integer'),
+  configId: z.number().int().positive('Config ID must be a positive integer'),
+  timerangeStart: z.string().datetime().optional().or(z.literal('')),
+  timerangeEnd: z.string().datetime().optional().or(z.literal('')),
+  overrideParams: z.record(z.string(), z.any()).optional(),
+  sourceHyperoptTaskId: z.string().uuid().optional().or(z.literal('')),
+});
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, strategyId, configId, timerangeStart, timerangeEnd, overrideParams, sourceHyperoptTaskId } = body
-
-    if (!name || !strategyId || !configId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    const validatedData = CreateBacktestRequestSchema.parse(body);
+    const { name, strategyId, configId, timerangeStart, timerangeEnd, overrideParams, sourceHyperoptTaskId } = validatedData;
 
     // 验证配置是否存在并包含 timeframe
     const config = await prisma.config.findUnique({
-      where: { id: parseInt(configId, 10) },
+      where: { id: configId },
     });
 
     if (!config) {
-      return NextResponse.json({ error: 'Configuration not found' }, { status: 404 });
+      const errorResponse: APIErrorResponse = {
+        error: 'Configuration not found',
+        type: 'NOT_FOUND',
+        timestamp: new Date(),
+      };
+      return NextResponse.json(errorResponse, { status: 404 });
     }
 
-    const timeframe = (config.data as any)?.timeframe;
+    const timeframe = (config.data as ConfigData)?.timeframe;
     if (!timeframe) {
-      return NextResponse.json(
-        { error: 'Configuration is missing the required "timeframe" field.' },
-        { status: 400 }
-      );
+      const errorResponse: APIErrorResponse = {
+        error: 'Configuration is missing the required "timeframe" field.',
+        type: 'VALIDATION_ERROR',
+        timestamp: new Date(),
+      };
+      return NextResponse.json(errorResponse, { status: 400 });
     }
 
     // 创建回测任务
@@ -95,10 +108,23 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(backtest)
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to create backtest' },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      const errorResponse: APIErrorResponse = {
+        error: 'Invalid request payload',
+        details: error.issues,
+        type: 'VALIDATION_ERROR',
+        timestamp: new Date(),
+      };
+      return NextResponse.json(errorResponse, { status: 400 });
+    }
+    console.error('Failed to create backtest:', error);
+    const errorResponse: APIErrorResponse = {
+      error: 'Failed to create backtest',
+      details: error.message || 'Unknown error',
+      type: 'INTERNAL_ERROR',
+      timestamp: new Date(),
+    };
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }

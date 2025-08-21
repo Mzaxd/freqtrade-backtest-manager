@@ -14,14 +14,34 @@ const getConfigsPath = () => {
 };
 
 function generateSafeFilename(name: string): string {
-  const pinyinName = pinyin(name, {
+  // Input validation and sanitization
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('Invalid filename input');
+  }
+  
+  // Remove potentially dangerous characters
+  const sanitizedName = name.replace(/[^\w\s\u4e00-\u9fff-]/g, '');
+  
+  const pinyinName = pinyin(sanitizedName, {
     style: 'normal',
   }).join('');
-  return `${pinyinName.replace(/[\s\W]/g, '_')}.json`;
+  
+  const safeName = pinyinName.replace(/[\s\W]/g, '_');
+  
+  // Ensure filename is not empty and has reasonable length
+  if (safeName.length === 0) {
+    throw new Error('Generated filename is empty');
+  }
+  
+  if (safeName.length > 100) {
+    throw new Error('Filename too long');
+  }
+  
+  return `${safeName}.json`;
 }
 
-const isObject = (item: any): item is object => {
-   return (item && typeof item === 'object' && !Array.isArray(item));
+const isObject = (item: unknown): item is object => {
+   return item !== null && typeof item === 'object' && !Array.isArray(item);
 };
 
 const deepMerge = <T extends object, U extends object>(target: T, source: U): T & U => {
@@ -35,12 +55,15 @@ const deepMerge = <T extends object, U extends object>(target: T, source: U): T 
            if (key in target) {
                const targetValue = target[key as keyof T];
                if (isObject(sourceValue) && isObject(targetValue)) {
-                   (output as any)[key] = deepMerge(targetValue, sourceValue as object);
+                   (output as Record<string, unknown>)[key] = deepMerge(
+                       targetValue as object, 
+                       sourceValue as object
+                   );
                } else {
-                   (output as any)[key] = sourceValue;
+                   (output as Record<string, unknown>)[key] = sourceValue;
                }
            } else {
-               (output as any)[key] = sourceValue;
+               (output as Record<string, unknown>)[key] = sourceValue;
            }
        });
    }
@@ -98,9 +121,26 @@ export async function PUT(
     const body = await request.json();
     const { name, description, config: userData, filename } = body;
 
+    // Input validation
     if (!name || !filename || !userData) {
       return NextResponse.json(
         { error: '缺少必填字段：需要 name、filename 和 config' },
+        { status: 400 },
+      );
+    }
+
+    // Validate filename to prevent path traversal
+    if (typeof filename !== 'string' || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return NextResponse.json(
+        { error: 'Invalid filename format' },
+        { status: 400 },
+      );
+    }
+
+    // Validate filename extension
+    if (!filename.endsWith('.json')) {
+      return NextResponse.json(
+        { error: 'Filename must end with .json' },
         { status: 400 },
       );
     }

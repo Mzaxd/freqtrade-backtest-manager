@@ -4,6 +4,9 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import AdmZip from 'adm-zip';
 import os from 'os';
+import { z } from 'zod';
+import { TradeData } from '@/types/chart'; // Import TradeData
+import type { BacktestResultsSummary } from '@/types/chart'; // Import BacktestResultsSummary as type
 
 export const runtime = 'nodejs'
 
@@ -17,33 +20,38 @@ async function fileExists(filePath: string) {
   }
 }
 
-interface Trade {
-  pair: string;
-  open_date: string;
-  close_date: string;
-  profit_abs: number;
-  profit_pct: number;
-  open_rate: number;
-  close_rate: number;
-  amount: number;
-  stake_amount: number;
-  trade_duration: number;
-  exit_reason: string;
-}
+// Zod schema for GET request query parameters
+const GetBacktestTradesSchema = z.object({
+  page: z.preprocess(
+    (val) => parseInt(z.string().parse(val), 10),
+    z.number().min(1).default(1)
+  ).optional(),
+  limit: z.preprocess(
+    (val) => parseInt(z.string().parse(val), 10),
+    z.number().min(1).default(10)
+  ).optional(),
+  sortBy: z.enum(['open_date', 'close_date', 'profit_abs', 'profit_pct', 'trade_duration']).default('open_date').optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
+  pair: z.string().optional(),
+  exitReason: z.string().optional(),
+});
+
+// Zod schema for params
+const ParamsSchema = z.object({
+  id: z.string().cuid(),
+});
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    const { id } = await ParamsSchema.parseAsync(resolvedParams);
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
-    const sortBy = searchParams.get('sortBy') || 'open_date';
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
-    const pair = searchParams.get('pair');
-    const exitReason = searchParams.get('exitReason');
+    
+    const queryParams = Object.fromEntries(searchParams.entries());
+    const { page, limit, sortBy, sortOrder, pair, exitReason } = GetBacktestTradesSchema.parse(queryParams);
 
     const backtest = await prisma.backtestTask.findUnique({
       where: { id: id },
@@ -60,8 +68,8 @@ export async function GET(
       )
     }
 
-    let allTrades: Trade[] = [];
-    let summary: Record<string, any> = {};
+    let allTrades: TradeData[] = [];
+    let summary: BacktestResultsSummary = {} as BacktestResultsSummary; // Initialize with a type assertion
 
     if (backtest.rawOutputPath && backtest.strategy?.className) {
       let resultFileContent: string | undefined;
@@ -110,12 +118,9 @@ export async function GET(
               allTrades = strategyData.trades;
             }
             // Extract summary data (all keys except 'trades')
-            summary = Object.keys(strategyData).reduce((acc, key) => {
-              if (key !== 'trades') {
-                acc[key] = strategyData[key];
-              }
-              return acc;
-            }, {} as Record<string, any>);
+            // Ensure all properties are copied to summary
+            summary = { ...strategyData };
+            delete summary.trades; // Remove the trades array if it exists
           }
         }
 
@@ -133,7 +138,7 @@ export async function GET(
     }
 
     // Apply filtering
-    let filteredTrades = allTrades;
+    let filteredTrades: TradeData[] = allTrades;
     if (pair) {
       filteredTrades = filteredTrades.filter(trade => trade.pair.toLowerCase().includes(pair.toLowerCase()));
     }
@@ -145,22 +150,25 @@ export async function GET(
 
     // Apply sorting
     filteredTrades.sort((a, b) => {
-      const aValue = (a as any)[sortBy];
-      const bValue = (b as any)[sortBy];
+      const aValue = a[sortBy as keyof TradeData];
+      const bValue = b[sortBy as keyof TradeData];
 
-      if (aValue < bValue) {
-        return sortOrder === 'asc' ? -1 : 1;
+      // Handle string comparison for dates and other string fields
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       }
-      if (aValue > bValue) {
-        return sortOrder === 'asc' ? 1 : -1;
+      // Handle number comparison for numeric fields
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
       }
+      // Fallback for other types or mixed types (shouldn't happen with current sortBy options)
       return 0;
     });
 
     const totalCount = filteredTrades.length;
 
     // Apply pagination
-    const paginatedTrades = filteredTrades.slice((page - 1) * limit, page * limit);
+    const paginatedTrades = filteredTrades.slice(((page ?? 1) - 1) * (limit ?? 10), (page ?? 1) * (limit ?? 10));
 
     const response = {
       ...backtest,
@@ -171,11 +179,15 @@ export async function GET(
     };
 
     return NextResponse.json(response);
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid request parameters', details: error.issues }, { status: 400 });
+    }
+    console.error('Failed to fetch backtest:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch backtest' },
+      { error: 'Failed to fetch backtest', details: error.message || 'Unknown error' },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -184,7 +196,8 @@ export async function HEAD(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    const { id } = await ParamsSchema.parseAsync(resolvedParams);
     const backtest = await prisma.backtestTask.findUnique({
       where: { id: id },
     })
@@ -194,8 +207,12 @@ export async function HEAD(
     }
 
     return new NextResponse(null, { status: 200 })
-  } catch (error) {
-    return new NextResponse(null, { status: 500 })
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return new NextResponse(null, { status: 400, statusText: 'Invalid request parameters' });
+    }
+    console.error('Failed to fetch backtest HEAD:', error);
+    return new NextResponse(null, { status: 500, statusText: 'Internal Server Error' });
   }
 }
 
@@ -204,20 +221,25 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    const { id } = await ParamsSchema.parseAsync(resolvedParams);
     await prisma.backtestTask.delete({
       where: { id: id },
     })
     return new NextResponse(null, { status: 204 })
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid request parameters', details: error.issues }, { status: 400 });
+    }
     if (error.code === 'P2025') {
       return NextResponse.json(
-        { error: 'Backtest not found' },
+        { error: 'Backtest not found', details: error.message },
         { status: 404 }
       )
     }
+    console.error('Failed to delete backtest:', error);
     return NextResponse.json(
-      { error: 'Failed to delete backtest' },
+      { error: 'Failed to delete backtest', details: error.message || 'Unknown error' },
       { status: 500 }
     )
   }

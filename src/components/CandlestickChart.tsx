@@ -8,35 +8,36 @@ import type {
   ISeriesApi,
   MouseEventParams,
   Time,
-  CandlestickData as CandlestickDataType,
   CandlestickSeriesOptions,
-  SeriesDataItemTypeMap,
   SeriesMarkerPosition,
   SeriesMarkerShape
 } from 'lightweight-charts'
 
-export type CandlestickData = SeriesDataItemTypeMap['Candlestick'] & {
-  volume?: number
-};
+import type {
+  OHLCVData,
+  TradeMarker,
+  TradeData,
+  ChartTheme,
+  ChartEventHandlers,
+  CrosshairMoveParams,
+  ChartError
+} from '@/types/chart'
 
-export interface TradeMarker {
-  time: Time
-  position: SeriesMarkerPosition
-  shape: SeriesMarkerShape
-  color: string
-  text: string
-  tradeData: any
-}
+// Re-export the main data type for backward compatibility
+export type CandlestickData = OHLCVData
 
-export interface ChartProps {
-  data: CandlestickData[]
+export interface ChartProps extends ChartEventHandlers {
+  data: OHLCVData[]
   tradeMarkers?: TradeMarker[]
   width?: number
   height?: number
-  onCrosshairMove?: (param: MouseEventParams) => void
-  onTradeClick?: (tradeData: any) => void
+  theme?: ChartTheme
   showVolume?: boolean
   showGrid?: boolean
+  showCrosshair?: boolean
+  autoResize?: boolean
+  performanceMode?: boolean
+  className?: string
 }
 
 export function CandlestickChart({ 
@@ -46,16 +47,23 @@ export function CandlestickChart({
   height = 600,
   onCrosshairMove,
   onTradeClick,
+  onError, // Add onError to destructuring
   showVolume = false,
-  showGrid = true 
+  showGrid = true,
+  theme,
+  showCrosshair = true,
+  autoResize = true,
+  performanceMode = false,
+  className = ''
 }: ChartProps) {
-  const chartContainerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<IChartApi | null>(null)
-  const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
-  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null)
-  const markersDataRef = useRef<any[]>([])
-  const tooltipRef = useRef<HTMLDivElement>(null)
-  const tradeTooltipRef = useRef<HTMLDivElement>(null)
+ const chartContainerRef = useRef<HTMLDivElement>(null)
+ const chartRef = useRef<IChartApi | null>(null)
+ const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+ const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null)
+ const markersDataRef = useRef<TradeMarker[]>([])
+ const tooltipRef = useRef<HTMLDivElement>(null)
+ const tradeTooltipRef = useRef<HTMLDivElement>(null)
+ const [error, setError] = useState<ChartError | null>(null)
 
   // 显示交易工具提示
   const showTradeTooltip = (trade: TradeMarker, point: { x: number; y: number }) => {
@@ -104,70 +112,97 @@ export function CandlestickChart({
   useEffect(() => {
     if (!chartContainerRef.current) return
 
+    // Default theme if not provided
+    const defaultTheme = theme || {
+      name: 'light',
+      backgroundColor: '#ffffff',
+      textColor: '#333333',
+      gridColor: '#f0f0f0',
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      volumeUpColor: '#26a69a',
+      volumeDownColor: '#ef5350',
+      borderColor: '#f0f0f0',
+      tooltipBackground: '#1a1a1a',
+      tooltipText: '#ffffff'
+    }
+
     // 创建图表实例
     const chart = createChart(chartContainerRef.current, {
       width,
       height,
       layout: {
-        background: { type: ColorType.Solid, color: '#ffffff' },
-        textColor: '#333',
-        backgroundColor: '#ffffff',
+        textColor: defaultTheme.textColor,
+        backgroundColor: defaultTheme.backgroundColor,
       },
       grid: {
         vertLines: { 
-          color: showGrid ? '#f0f0f0' : 'transparent',
+          color: showGrid ? defaultTheme.gridColor : 'transparent',
           style: LineStyle.Dashed,
         },
         horzLines: { 
-          color: showGrid ? '#f0f0f0' : 'transparent',
+          color: showGrid ? defaultTheme.gridColor : 'transparent',
           style: LineStyle.Dashed,
         },
       },
       crosshair: {
-        mode: CrosshairMode.Normal,
+        mode: showCrosshair ? CrosshairMode.Normal : CrosshairMode.Magnet,
         vertLine: {
           width: 1,
-          color: '#758696',
+          color: defaultTheme.borderColor,
           style: LineStyle.Dashed,
         },
         horzLine: {
           width: 1,
-          color: '#758696',
+          color: defaultTheme.borderColor,
           style: LineStyle.Dashed,
         },
       },
       rightPriceScale: {
-        borderColor: '#f0f0f0',
+        borderColor: defaultTheme.borderColor,
         mode: PriceScaleMode.Normal,
       },
       timeScale: {
-        borderColor: '#f0f0f0',
+        borderColor: defaultTheme.borderColor,
         timeVisible: true,
         secondsVisible: false,
       },
-    } as ChartOptions)
+    })
 
     chartRef.current = chart
 
     // 创建K线系列
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderDownColor: '#ef5350',
-      borderUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
-      wickUpColor: '#26a69a',
+      upColor: defaultTheme.upColor,
+      downColor: defaultTheme.downColor,
+      borderDownColor: defaultTheme.downColor,
+      borderUpColor: defaultTheme.upColor,
+      wickDownColor: defaultTheme.downColor,
+      wickUpColor: defaultTheme.upColor,
     })
 
     seriesRef.current = candlestickSeries
 
     // 设置数据
-    candlestickSeries.setData(data)
+    try {
+      candlestickSeries.setData(data)
+    } catch (err) {
+      const chartError: ChartError = {
+        type: 'DATA_ERROR',
+        message: `Failed to set chart data: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        code: 'DATA_SET_FAILED',
+        details: err,
+        timestamp: new Date()
+      }
+        setError(chartError)
+      onError?.(chartError)
+      return
+    }
 
     // 创建成交量系列（如果启用）
     if (showVolume) {
       const volumeSeries = chart.addHistogramSeries({
-        color: '#26a69a',
+        color: defaultTheme.volumeUpColor,
         priceFormat: {
           type: 'volume',
         },
@@ -179,7 +214,7 @@ export function CandlestickChart({
       const volumeData = data.map(candle => ({
         time: candle.time,
         value: candle.volume || 0,
-        color: candle.close >= candle.open ? '#26a69a' : '#ef5350',
+        color: candle.close >= candle.open ? defaultTheme.volumeUpColor : defaultTheme.volumeDownColor,
       }))
       volumeSeries.setData(volumeData)
     }
@@ -193,6 +228,7 @@ export function CandlestickChart({
         color: t.color,
         text: t.text,
         size: 1,
+        tradeData: t.tradeData, // Ensure tradeData is included
       }))
 
       candlestickSeries.setMarkers(markersList)
@@ -201,7 +237,14 @@ export function CandlestickChart({
 
     // 订阅十字线移动事件
     chart.subscribeCrosshairMove((param: MouseEventParams) => {
-      onCrosshairMove?.(param)
+      const crosshairMoveParams: CrosshairMoveParams = {
+        time: param.time,
+        point: param.point,
+        seriesData: param.seriesData,
+        hoveredSeries: param.hoveredSeries,
+        sourceEvent: param.sourceEvent,
+      };
+      onCrosshairMove?.(crosshairMoveParams);
       
       // 更新工具提示位置
       if (tooltipRef.current && param.point) {
@@ -238,46 +281,92 @@ export function CandlestickChart({
 
     // 响应式处理
     const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
+      if (autoResize && chartContainerRef.current && chartRef.current) {
         const containerWidth = chartContainerRef.current.clientWidth
         chartRef.current.applyOptions({ width: containerWidth })
       }
     }
 
-    window.addEventListener('resize', handleResize)
+    if (autoResize) {
+      window.addEventListener('resize', handleResize)
+    }
 
     return () => {
-      window.removeEventListener('resize', handleResize)
-      chart.remove()
+      if (autoResize) {
+        window.removeEventListener('resize', handleResize)
+      }
+      if (chartRef.current) {
+        chartRef.current.remove()
+      }
     }
-  }, [data, tradeMarkers, width, height, onCrosshairMove, onTradeClick, showVolume, showGrid])
+  }, [data, tradeMarkers, width, height, onCrosshairMove, onTradeClick, showVolume, showGrid, theme, showCrosshair, autoResize, performanceMode])
 
   // 更新数据
   useEffect(() => {
     if (seriesRef.current) {
-      seriesRef.current.setData(data as any)
+      try {
+        seriesRef.current.setData(data)
+        setError(null)
+      } catch (err) {
+        const chartError: ChartError = {
+          type: 'DATA_ERROR',
+          message: `Failed to update chart data: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          code: 'DATA_UPDATE_FAILED',
+          details: err,
+          timestamp: new Date()
+        }
+        setError(chartError)
+        onError?.(chartError)
+      }
     }
   }, [data])
 
   // 更新交易标记
   useEffect(() => {
     if (seriesRef.current && tradeMarkers.length > 0) {
-      const mappedTrades = tradeMarkers.map(t => ({
-        time: t.time,
-        position: t.position,
-        shape: t.shape,
-        color: t.color,
-        text: t.text,
-        size: 1,
-      }))
-      
-      seriesRef.current.setMarkers(mappedTrades)
-      markersDataRef.current = mappedTrades
+      try {
+        const mappedTrades = tradeMarkers.map(t => ({
+          time: t.time,
+          position: t.position,
+          shape: t.shape,
+          color: t.color,
+          text: t.text,
+          size: 1,
+          tradeData: t.tradeData, // Ensure tradeData is included
+        }))
+        
+        seriesRef.current.setMarkers(mappedTrades)
+        markersDataRef.current = mappedTrades
+        setError(null)
+      } catch (err) {
+        const chartError: ChartError = {
+          type: 'DATA_ERROR',
+          message: `Failed to update trade markers: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          code: 'MARKER_UPDATE_FAILED',
+          details: err,
+          timestamp: new Date()
+        }
+        setError(chartError)
+        onError?.(chartError)
+      }
     }
   }, [tradeMarkers])
 
+  // Error boundary effect
+  useEffect(() => {
+    if (error) {
+      console.error('Chart error:', error)
+    }
+  }, [error])
+
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
+      {error && (
+        <div className="absolute top-0 left-0 w-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-20">
+          <strong className="font-bold">Chart Error:</strong>
+          <span className="block sm:inline"> {error.message}</span>
+        </div>
+      )}
       <div ref={chartContainerRef} className="w-full" />
       <div 
         ref={tooltipRef}

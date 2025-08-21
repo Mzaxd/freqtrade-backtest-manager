@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { CandlestickData, TradeMarker } from './CandlestickChart'
-import { Time, SeriesMarkerPosition, SeriesMarkerShape } from 'lightweight-charts'
+import { TradeMarker } from '@/types/chart'
+import { Time } from 'lightweight-charts'
 import { EnhancedChartContainer } from './chart/EnhancedChartContainer'
 import { ChartTheme, getChartTheme } from './chart/themes'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,25 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { RefreshCw, Download, ZoomIn, ZoomOut, Move3D, Settings, Palette, TrendingUp, Activity } from 'lucide-react'
 import { format } from 'date-fns'
-
-export interface Trade {
-  pair: string
-  open_date: string
-  close_date: string
-  profit_abs: number
-  profit_pct: number
-  open_rate: number
-  close_rate: number
-  amount: number
-  stake_amount: number
-  trade_duration: number
-  exit_reason: string
-}
-
-interface ChartData {
-  candles: CandlestickData[]
-  trades: Trade[]
-}
+import { TradeData, ChartData, BacktestMeta, CrosshairMoveParams, OHLCVData } from '@/types/chart'
 
 interface EnhancedChartProps {
   backtestId: string
@@ -45,20 +27,20 @@ const DynamicCandlestickChart = dynamic(
 
 export function EnhancedTradingChart({ backtestId, initialData, className }: EnhancedChartProps) {
   const [chartData, setChartData] = useState<ChartData>(initialData || { candles: [], trades: [] })
-  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
+  const [selectedTrade, setSelectedTrade] = useState<TradeData | null>(null)
   const [loading, setLoading] = useState(false)
   const [timeframe, setTimeframe] = useState('5m')
   const [showVolume, setShowVolume] = useState(false)
   const [showGrid, setShowGrid] = useState(true)
   const [availablePairs, setAvailablePairs] = useState<string[]>([])
   const [selectedPair, setSelectedPair] = useState<string>('')
-  const [backtestMeta, setBacktestMeta] = useState<any>(null)
+  const [backtestMeta, setBacktestMeta] = useState<BacktestMeta | null>(null)
   const [currentTheme, setCurrentTheme] = useState<ChartTheme>(getChartTheme('light'))
   const [showAdvancedControls, setShowAdvancedControls] = useState(false)
  
    // 转换交易数据为标记
-  const convertTradesToMarkers = (trades: Trade[]): TradeMarker[] => {
-    const markers = trades.map((trade, index) => {
+  const convertTradesToMarkers = (trades: TradeData[]): TradeMarker[] => {
+    const markers = trades.map((trade) => {
       const openTime = Math.floor(new Date(trade.open_date).getTime() / 1000) as Time
       const closeTime = Math.floor(new Date(trade.close_date).getTime() / 1000) as Time
       
@@ -67,53 +49,65 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
       return [
         {
           time: openTime,
-          position: 'below' as SeriesMarkerPosition,
-          shape: 'arrowUp' as SeriesMarkerShape,
+          position: 'belowBar',
+          shape: 'arrowUp',
           color: isProfitable ? '#26a69a' : '#ef5350',
           text: '开',
-          tradeData: { ...trade, type: 'open' }
+          tradeData: { ...trade, type: 'open' as 'open' }
         },
         {
           time: closeTime,
-          position: 'above' as SeriesMarkerPosition,
-          shape: 'arrowDown' as SeriesMarkerShape,
+          position: 'aboveBar',
+          shape: 'arrowDown',
           color: isProfitable ? '#26a69a' : '#ef5350',
           text: '平',
-          tradeData: { ...trade, type: 'close' }
+          tradeData: { ...trade, type: 'close' as 'close' }
         }
       ]
     }).flat()
     
     // 按时间升序排序标记
-    return markers.sort((a, b) => a.time - b.time)
+    return markers.sort((a, b) => {
+      const timeA = typeof a.time === 'string' ? parseInt(a.time) : a.time as number;
+      const timeB = typeof b.time === 'string' ? parseInt(b.time) : b.time as number;
+      return timeA - timeB;
+    })
   }
 
   const tradeMarkers = convertTradesToMarkers(chartData.trades)
 
-  const handleTradeClick = (tradeData: any) => {
+  const handleTradeClick = (tradeData: TradeData & { type: 'open' | 'close' }) => {
     setSelectedTrade(tradeData)
   }
 
-  const handleCrosshairMove = (param: any) => {
+  const handleCrosshairMove = (param: CrosshairMoveParams) => {
     // 可以在这里添加十字线移动的逻辑
     if (param.seriesData && param.seriesData.size > 0) {
-      const data = param.seriesData.get(param.seriesData.keys().next().value)
-      if (data) {
-        // 更新工具提示内容
-        const tooltip = document.getElementById('tooltip-content')
-        if (tooltip) {
-          tooltip.innerHTML = `
-            <div>开: ${data.open}</div>
-            <div>高: ${data.high}</div>
-            <div>低: ${data.low}</div>
-            <div>收: ${data.close}</div>
-          `
+      const key = param.seriesData.keys().next().value;
+      if (key) {
+        const data = param.seriesData.get(key)
+        if (data) {
+          // 更新工具提示内容
+          const tooltip = document.getElementById('tooltip-content')
+          if (tooltip && typeof data === 'object' && data !== null) {
+            // 使用 OHLCVData 接口来确保类型安全
+            const candleData = data as OHLCVData
+            tooltip.innerHTML = `
+              <div>开: ${candleData.open ?? 'N/A'}</div>
+              <div>高: ${candleData.high ?? 'N/A'}</div>
+              <div>低: ${candleData.low ?? 'N/A'}</div>
+              <div>收: ${candleData.close ?? 'N/A'}</div>
+            `
+          }
         }
       }
     }
   }
 
   const handleRefresh = async () => {
+    // Prevent multiple concurrent refreshes
+    if (loading) return;
+    
     setLoading(true);
     try {
         // First, get backtest metadata to populate pair list
@@ -122,7 +116,7 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
             if (metaResponse.ok) {
                 const backtest = await metaResponse.json();
                 setBacktestMeta(backtest);
-                const pairs = [...new Set(backtest.trades?.map((trade: any) => trade.pair) || [])] as string[];
+                const pairs = [...new Set(backtest.trades?.map((trade: TradeData) => trade.pair) || [])] as string[];
                 setAvailablePairs(pairs);
                 // If a pair is not selected yet, or the selected one is not in the new list, default to the first one
                 if (pairs.length > 0 && !pairs.includes(selectedPair)) {
@@ -130,7 +124,6 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
                 }
             } else {
                  console.error('Failed to fetch backtest metadata');
-                 setLoading(false);
                  return;
             }
         }
@@ -173,15 +166,23 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
 
   // 组件加载时立即获取数据
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const initializeChart = async () => {
+      if (!isMounted) return;
+      
       setLoading(true);
       try {
         // 首先获取回测元数据以填充交易对列表
-        const metaResponse = await fetch(`/api/backtests/${backtestId}`);
-        if (metaResponse.ok) {
+        const metaResponse = await fetch(`/api/backtests/${backtestId}`, {
+          signal: abortController.signal
+        });
+        
+        if (metaResponse.ok && isMounted) {
           const backtest = await metaResponse.json();
           setBacktestMeta(backtest);
-          const pairs = [...new Set(backtest.trades?.map((trade: any) => trade.pair) || [])] as string[];
+          const pairs = [...new Set(backtest.trades?.map((trade: TradeData) => trade.pair) || [])] as string[];
           setAvailablePairs(pairs);
           
           // 如果没有选中的交易对或者选中的不在新列表中，默认选择第一个
@@ -191,8 +192,10 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
         }
         
         // 如果有选中的交易对，立即获取其图表数据
-        if (selectedPair) {
-          const response = await fetch(`/api/backtests/${backtestId}/chart-data?timeframe=${timeframe}&pair=${selectedPair}`);
+        if (selectedPair && isMounted) {
+          const response = await fetch(`/api/backtests/${backtestId}/chart-data?timeframe=${timeframe}&pair=${selectedPair}`, {
+            signal: abortController.signal
+          });
           if (response.ok) {
             const data = await response.json();
             setChartData(data);
@@ -202,21 +205,62 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
           }
         }
       } catch (error) {
-        console.error('Failed to initialize chart:', error);
+        if ((error as Error).name !== 'AbortError' && isMounted) {
+          console.error('Failed to initialize chart:', error);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     initializeChart();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [backtestId]); // 仅在backtestId变化时重新初始化
 
   // 当时间框架或交易对变化时，刷新数据
   useEffect(() => {
-    if (selectedPair && availablePairs.length > 0) {
-      handleRefresh();
-    }
-  }, [timeframe, selectedPair]);
+    let isMounted = true;
+    const abortController = new AbortController();
+
+    const refreshData = async () => {
+      if (!isMounted || !selectedPair || availablePairs.length === 0) return;
+      
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/backtests/${backtestId}/chart-data?timeframe=${timeframe}&pair=${selectedPair}`, {
+          signal: abortController.signal
+        });
+        if (response.ok && isMounted) {
+          const data = await response.json();
+          setChartData(data);
+        } else if (isMounted) {
+          console.error('Failed to fetch chart data for pair:', selectedPair);
+          setChartData({ candles: [], trades: [] });
+        }
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError' && isMounted) {
+          console.error('Failed to refresh chart data:', error);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    refreshData();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
+  }, [timeframe, selectedPair, availablePairs.length, backtestId]);
  
    return (
     <div className={`space-y-4 ${className}`}>

@@ -370,8 +370,8 @@ export function useDataWorker<T, R>(
 
 // RequestAnimationFrame optimization
 export function useRAF(callback: () => void, deps: any[] = []) {
-  const requestRef = useRef<number>()
-  const previousTimeRef = useRef<number>()
+  const requestRef = useRef<number>(0)
+  const previousTimeRef = useRef<number>(0)
 
   const animate = useCallback((time: number) => {
     if (previousTimeRef.current === undefined) {
@@ -400,7 +400,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
   callback: T,
   delay: number
 ): T {
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   return useCallback(
     ((...args: any[]) => {

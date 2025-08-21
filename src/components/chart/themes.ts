@@ -1,4 +1,4 @@
-import type { CrosshairMode, PriceScaleMode, LineStyle } from 'lightweight-charts'
+import { CrosshairMode, PriceScaleMode, LineStyle } from 'lightweight-charts'
 
 export interface ChartTheme {
   name: string;

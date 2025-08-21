@@ -5,6 +5,19 @@ import { promises as fs } from 'fs'
 import AdmZip from 'adm-zip'
 import os from 'os'
 
+import {
+  ChartDataQuerySchema,
+  ChartDataResponseSchema,
+  OHLCVDataSchema,
+  TradeDataSchema,
+  RawCandlestickDataSchema, // Add RawCandlestickDataSchema
+  validateQuery,
+  createErrorResponse,
+  createSuccessResponse,
+  validateFilePath,
+  sanitizeString
+} from '@/lib/validation'
+
 export const runtime = 'nodejs'
 
 // Helper function to check if a file exists
@@ -44,14 +57,17 @@ async function readCandlestickDataFromBacktestFile(
     }
     
     // Freqtrade数据格式: [timestamp, open, high, low, close, volume]
-    let candles = data.map((row: any[]) => ({
-      time: Math.floor(row[0] / 1000), // ms to s
-      open: row[1],
-      high: row[2],
-      low: row[3],
-      close: row[4],
-      volume: row[5],
-    }));
+    let candles = data.map((row: unknown) => {
+      const validatedRow = RawCandlestickDataSchema.parse(row); // Validate raw data
+      return {
+        time: Math.floor(validatedRow.time as number / 1000), // ms to s
+        open: validatedRow.open,
+        high: validatedRow.high,
+        low: validatedRow.low,
+        close: validatedRow.close,
+        volume: validatedRow.volume,
+      };
+    });
 
     // 根据回测时间范围过滤
     if (timerangeStart && timerangeEnd) {
@@ -110,14 +126,17 @@ async function readCandlestickDataFromDataDir(
     }
     
     // Freqtrade数据格式: [timestamp, open, high, low, close, volume]
-    let candles = data.map((row: any[]) => ({
-      time: Math.floor(row[0] / 1000), // ms to s
-      open: row[1],
-      high: row[2],
-      low: row[3],
-      close: row[4],
-      volume: row[5],
-    }));
+    let candles = data.map((row: unknown) => {
+      const validatedRow = RawCandlestickDataSchema.parse(row); // Validate raw data
+      return {
+        time: Math.floor(validatedRow.time as number / 1000), // ms to s
+        open: validatedRow.open,
+        high: validatedRow.high,
+        low: validatedRow.low,
+        close: validatedRow.close,
+        volume: validatedRow.volume,
+      };
+    });
 
     // 根据回测时间范围过滤
     if (timerangeStart && timerangeEnd) {
@@ -141,11 +160,24 @@ export async function GET(
   try {
     const { id } = await params
     const { searchParams } = new URL(request.url)
-    const timeframe = searchParams.get('timeframe') || '5m';
-    const pair = searchParams.get('pair');
-
-    if (!pair) {
-      return NextResponse.json({ error: 'Pair parameter is required' }, { status: 400 });
+    
+    // Validate query parameters
+    const query = {
+      timeframe: searchParams.get('timeframe') || '5m',
+      pair: searchParams.get('pair'),
+      limit: searchParams.get('limit'),
+      offset: searchParams.get('offset'),
+      startTime: searchParams.get('startTime'),
+      endTime: searchParams.get('endTime')
+    }
+    
+    const validatedQuery = validateQuery(ChartDataQuerySchema, query)
+    
+    if (!validatedQuery.pair) {
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Pair parameter is required', 'MISSING_PAIR'),
+        { status: 400 }
+      );
     }
     
     const backtest = await prisma.backtestTask.findUnique({
@@ -155,14 +187,14 @@ export async function GET(
         config: true,
         trades: {
           orderBy: { open_date: 'asc' },
-          where: { pair: pair }
+          where: { pair: validatedQuery.pair }
         }
       },
     });
     
     if (!backtest) {
       return NextResponse.json(
-        { error: 'Backtest not found' },
+        createErrorResponse('NOT_FOUND', 'Backtest not found', 'BACKTEST_NOT_FOUND'),
         { status: 404 }
       );
     }
@@ -170,6 +202,14 @@ export async function GET(
     // 优先从回测专用的数据文件中读取K线数据
     let candleData = null;
     if (backtest.candleDataFile) {
+      // Validate file path to prevent directory traversal
+      if (!validateFilePath(backtest.candleDataFile)) {
+        return NextResponse.json(
+          createErrorResponse('VALIDATION_ERROR', 'Invalid file path', 'INVALID_FILE_PATH'),
+          { status: 400 }
+        );
+      }
+      
       candleData = await readCandlestickDataFromBacktestFile(
         backtest.candleDataFile,
         backtest.timerangeStart || undefined,
@@ -180,16 +220,16 @@ export async function GET(
     // 如果没有专用的数据文件，则从原始数据目录读取
     if (!candleData) {
       candleData = await readCandlestickDataFromDataDir(
-        pair,
-        timeframe,
+        validatedQuery.pair,
+        validatedQuery.timeframe,
         backtest.timerangeStart || undefined,
         backtest.timerangeEnd || undefined
       );
     }
 
     // 转换交易数据格式
-    const trades = backtest.trades.map((trade: any) => ({
-      pair: trade.pair,
+    const trades = backtest.trades.map((trade) => ({
+      pair: sanitizeString(trade.pair),
       open_date: trade.open_date.toISOString(),
       close_date: trade.close_date.toISOString(),
       profit_abs: trade.profit_abs,
@@ -199,21 +239,61 @@ export async function GET(
       amount: trade.amount,
       stake_amount: trade.stake_amount,
       trade_duration: trade.trade_duration,
-      exit_reason: trade.exit_reason,
+      exit_reason: sanitizeString(trade.exit_reason),
     }));
 
+    // Validate response data
+    const validatedCandles = candleData || []
+    const validatedTrades = trades.filter(trade => {
+      try {
+        TradeDataSchema.parse(trade)
+        return true
+      } catch {
+        return false
+      }
+    })
+
+    // Apply pagination if specified
+    let finalCandles = validatedCandles
+    if (validatedQuery.limit) {
+      const offset = validatedQuery.offset || 0
+      finalCandles = validatedCandles.slice(offset, offset + validatedQuery.limit)
+    }
+
     const response = {
-      candles: candleData || [],
-      trades: trades,
-      timeframe: timeframe,
-      pair: pair,
+      candles: finalCandles,
+      trades: validatedTrades,
+      timeframe: validatedQuery.timeframe,
+      pair: validatedQuery.pair,
+      metadata: {
+        totalCandles: validatedCandles.length,
+        totalTrades: validatedTrades.length,
+        dateRange: {
+          start: backtest.timerangeStart || new Date(),
+          end: backtest.timerangeEnd || new Date()
+        },
+        generatedAt: new Date()
+      }
     };
     
-    return NextResponse.json(response)
+    // Validate final response
+    const validatedResponse = ChartDataResponseSchema.parse(response)
+    
+    return NextResponse.json(createSuccessResponse(validatedResponse))
   } catch (error) {
     console.error('Failed to fetch chart data:', error)
+    
+    if (error instanceof Error) {
+      if (error.message.includes('Validation failed')) {
+        return NextResponse.json(
+          createErrorResponse('VALIDATION_ERROR', error.message, 'VALIDATION_FAILED'),
+          { status: 400 }
+        )
+      }
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to fetch chart data' },
+      createErrorResponse('INTERNAL_ERROR', 'Failed to fetch chart data', 'CHART_DATA_FETCH_FAILED', error),
       { status: 500 }
     )
   }

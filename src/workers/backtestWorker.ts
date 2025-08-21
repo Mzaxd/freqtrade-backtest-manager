@@ -4,6 +4,7 @@ import Redis from 'ioredis'
 import { Prisma } from '@prisma/client'
 import path from 'path'
 import { promises as fs } from 'fs'
+import { TradeData, BacktestResultsSummary } from '@/types/chart'
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
@@ -110,12 +111,36 @@ async function findLatestBacktestResult(resultsDir: string, taskId: string): Pro
   return null;
 }
 
-export async function processBacktest(taskId: string, overrideParams?: any) {
+interface BacktestResult {
+  [strategyName: string]: {
+    trades?: TradeData[]
+    total_trades?: number
+    wins?: number
+    losses?: number
+    draws?: number
+    profit_total?: number
+    profit_total_abs?: number
+    stake_currency?: string
+    avg_duration?: string
+    best_pair?: string
+    worst_pair?: string
+  }
+}
+
+interface OverrideParams {
+  [key: string]: unknown
+  stake_amount?: number
+  max_open_trades?: number
+  timeframe?: string
+  timerange?: string
+}
+
+export async function processBacktest(taskId: string, overrideParams?: OverrideParams) {
   try {
     // 更新任务状态为 RUNNING
     await prisma.backtestTask.update({
       where: { id: taskId },
-      data: { status: 'RUNNING' },
+      data: { status: Prisma.BacktestStatus.RUNNING },
     })
 
     // 获取任务详情
@@ -127,6 +152,10 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
     if (!task) {
       throw new Error(`Task ${taskId} not found`)
     }
+
+    // Prisma Client生成的类型已经包含关联关系，无需额外类型守卫
+    // const backtestTask = task as BacktestTaskWithRelations
+    const backtestTask = task;
 
     const logs: string[] = [];
     
@@ -143,10 +172,10 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
     const args = [
       ...baseArgs,
       'backtesting',
-      '--config', path.posix.join(containerUserDataPath, 'configs', task.config?.filename || ''),
-      '--strategy', task.strategy.className,
+      '--config', path.posix.join(containerUserDataPath, 'configs', backtestTask.config?.filename || ''),
+      '--strategy', backtestTask.strategy.className,
       '--strategy-path', path.posix.join(containerUserDataPath, 'strategies'),
-      '--timerange', `${task.timerangeStart?.toISOString().split('T')[0].replace(/-/g, '')}-${task.timerangeEnd?.toISOString().split('T')[0].replace(/-/g, '')}`,
+      '--timerange', `${backtestTask.timerangeStart?.toISOString().split('T')[0].replace(/-/g, '')}-${backtestTask.timerangeEnd?.toISOString().split('T')[0].replace(/-/g, '')}`,
       '--export', 'trades,meta',
       '--export-filename', path.posix.join(containerUserDataPath, 'backtest_results', exportFilename),
       '--cache', 'none',
@@ -161,7 +190,7 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       await mkdir(path.join(userDataPath, 'temp_configs'), { recursive: true })
       
       // 读取原始配置
-      const originalConfig = task.config?.data as Record<string, any> || {}
+      const originalConfig = (backtestTask.config?.data as Record<string, unknown>) || {}
       const mergedConfig = { ...originalConfig, ...overrideParams }
       
       await writeFile(tempConfigPath, JSON.stringify(mergedConfig, null, 2))
@@ -225,7 +254,7 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
 
     const backtestResultsDir = path.join(userDataPath, 'backtest_results');
     const resultPath = await findLatestBacktestResult(backtestResultsDir, taskId);
-    let resultsSummary = null;
+    let resultsSummary: BacktestResultsSummary | null = null;
     let plotProfitUrl = null;
     let isSuccess = false;
 
@@ -272,9 +301,9 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
           throw new Error("Main result file is empty.");
         }
 
-        let result;
+        let result: BacktestResult;
         try {
-          result = JSON.parse(resultData);
+          result = JSON.parse(resultData) as BacktestResult;
         } catch (parseError) {
           console.error(`Failed to parse JSON from result file: ${parseError}`);
           console.error(`File content preview: ${resultData.substring(0, 500)}...`);
@@ -300,22 +329,22 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
           if (await fileExists(metaFilePath)) {
             console.log(`[${taskId}] Found meta.json file: ${metaFilePath}`);
             const metaData = await fs.readFile(metaFilePath, 'utf8');
-            const metaResult = JSON.parse(metaData);
+            const metaResult = JSON.parse(metaData) as BacktestResult;
             const metaStrategyName = Object.keys(metaResult)[0];
             if (metaStrategyName && metaResult[metaStrategyName]) {
               // Use the meta.json for summary statistics and keep trades data separate
-              resultsSummary = metaResult[metaStrategyName];
+              resultsSummary = metaResult[metaStrategyName] as BacktestResultsSummary;
               console.log(`[${taskId}] Using meta.json for summary statistics`);
             }
           } else {
             console.log(`[${taskId}] No meta.json file found, calculating summary from trades...`);
             // Calculate summary statistics from trades
             const trades = strategyResult.trades || [];
-            const wins = trades.filter((t: any) => t.profit_pct > 0).length;
-            const losses = trades.filter((t: any) => t.profit_pct < 0).length;
-            const draws = trades.filter((t: any) => t.profit_pct === 0).length;
-            const totalProfit = trades.reduce((sum: number, t: any) => sum + t.profit_abs, 0);
-            const profitTotal = trades.reduce((sum: number, t: any) => sum + t.profit_pct, 0);
+            const wins = trades.filter((t: TradeData) => t.profit_pct > 0).length;
+            const losses = trades.filter((t: TradeData) => t.profit_pct < 0).length;
+            const draws = trades.filter((t: TradeData) => t.profit_pct === 0).length;
+            const totalProfit = trades.reduce((sum: number, t: TradeData) => sum + t.profit_abs, 0);
+            const profitTotal = trades.reduce((sum: number, t: TradeData) => sum + t.profit_pct, 0);
             
             resultsSummary = {
               total_trades: trades.length,
@@ -328,12 +357,16 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
               avg_duration: 'N/A',
               best_pair: 'N/A',
               worst_pair: 'N/A',
+              // Add other required fields with default/placeholder values
+              max_drawdown: 0,
+              win_rate: trades.length > 0 ? wins / trades.length : 0,
+              profit_factor: 0, // Cannot be calculated without gross profit/loss
             };
             console.log(`[${taskId}] Calculated summary from trades:`, resultsSummary);
           }
         } else {
           // This is already a meta.json file or contains summary statistics
-          resultsSummary = strategyResult;
+          resultsSummary = strategyResult as BacktestResultsSummary;
           console.log(`[${taskId}] Using existing summary statistics from result file`);
         }
 
@@ -351,7 +384,7 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
 
     // 如果回测成功，重命名数据文件
     let candleDataFile = null;
-    if (isSuccess && !hasErrorInLog && task.timerangeStart && task.timerangeEnd) {
+    if (isSuccess && !hasErrorInLog && backtestTask.timerangeStart && backtestTask.timerangeEnd) {
       // 从交易中获取交易对信息
       const trades = await prisma.trade.findMany({
         where: { backtestTaskId: taskId },
@@ -360,15 +393,15 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       
       if (trades.length > 0) {
         const pair = trades[0].pair;
-        const timeframe = task.timeframe || '5m';
+        const timeframe = backtestTask.timeframe || '5m';
         const exchange = 'binance'; // 默认交易所，可以从配置中获取
         
         candleDataFile = await renameDataFileForBacktest(
           exchange,
           pair,
           timeframe,
-          task.timerangeStart,
-          task.timerangeEnd,
+          backtestTask.timerangeStart,
+          backtestTask.timerangeEnd,
           taskId
         );
       }
@@ -385,7 +418,7 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       await prisma.backtestTask.update({
         where: { id: taskId },
         data: {
-          status: 'COMPLETED',
+          status: Prisma.BacktestStatus.COMPLETED,
           completedAt: new Date(),
           resultsSummary: resultsSummary ?? Prisma.JsonNull,
           rawOutputPath: resultPath,
@@ -405,7 +438,7 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
       await prisma.backtestTask.update({
         where: { id: taskId },
         data: {
-          status: 'FAILED',
+          status: Prisma.BacktestStatus.FAILED,
           completedAt: new Date(),
           logs: fullLogs,
           rawOutputPath: resultPath, // Still save the path for debugging
@@ -413,16 +446,16 @@ export async function processBacktest(taskId: string, overrideParams?: any) {
         },
       });
     }
-  } catch (error) {
+  } catch (error: any) { // Explicitly type error as any for now, refine later
     console.error('Error processing backtest:', error)
     
     // 更新任务状态为 FAILED
     await prisma.backtestTask.update({
       where: { id: taskId },
       data: {
-        status: 'FAILED',
+        status: Prisma.BacktestStatus.FAILED,
         completedAt: new Date(),
-        logs: error instanceof Error ? error.message : 'Unknown error',
+        logs: error instanceof Error ? error.message : String(error), // Convert non-Error objects to string
       },
     })
   }

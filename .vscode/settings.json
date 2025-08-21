@@ -3,7 +3,7 @@
   "typescript.updateImportsOnFileMove.enabled": "always",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
+    "source.fixAll.eslint": "explicit"
   },
   "debug.node.autoAttach": "on",
   "debug.internalConsoleOptions": "neverOpen",

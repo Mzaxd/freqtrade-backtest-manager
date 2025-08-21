@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { readdir, readFile, stat } from 'fs/promises'
 import { join } from 'path'
+import { z } from 'zod'
+import { APIErrorResponse } from '@/types/chart'
+import { Prisma } from '@prisma/client' // Import Prisma namespace
 
 const getConfigsPath = () => {
   const userDataPath = process.env.FREQTRADE_USER_DATA_PATH || join(process.cwd(), 'ft_user_data');
@@ -16,6 +19,64 @@ interface ConfigFile {
   lastModified: Date;
   parsedConfig?: any;
 }
+
+// Zod schema for a single config file entry in the GET response
+const ConfigFileSchema = z.object({
+  filename: z.string(),
+  name: z.string(),
+  timeframe: z.string(),
+  exchange: z.string(),
+  size: z.number(),
+  lastModified: z.date(),
+});
+
+// Zod schema for the GET response data
+const GetImportConfigsResponseDataSchema = z.object({
+  total: z.number(),
+  available: z.number(),
+  existing: z.number(),
+  files: z.array(ConfigFileSchema),
+});
+
+// Zod schema for the POST request body
+const ImportConfigsRequestSchema = z.object({
+  filenames: z.array(z.string().min(1, 'Filename cannot be empty')).min(1, 'At least one filename is required for import'),
+});
+
+// Zod schema for the POST response data (for a single imported config)
+const ImportedConfigSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  filename: z.string(),
+  description: z.string().optional(),
+  data: z.record(z.string(), z.any()), // Assuming data can be any JSON structure
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+// Zod schema for the POST response data (for errors)
+const ImportErrorSchema = z.object({
+  filename: z.string(),
+  error: z.string(),
+});
+
+// Zod schema for the POST response data
+const PostImportConfigsResponseDataSchema = z.object({
+  imported: z.number(),
+  total: z.number(),
+  configs: z.array(ImportedConfigSchema),
+  errors: z.array(ImportErrorSchema),
+});
+
+// Basic schema for freqtrade config files (partial, focus on relevant fields)
+const FreqtradeConfigSchema = z.object({
+  timeframe: z.string().min(1, 'Timeframe is required in config file'),
+  bot_name: z.string().optional(),
+  exchange: z.object({
+    name: z.string().optional(),
+  }).optional(),
+  // Add other fields you expect in the config file if needed for validation
+}).passthrough(); // Allow other fields not defined in the schema
 
 async function scanConfigFiles(): Promise<ConfigFile[]> {
   const configsPath = getConfigsPath();
@@ -74,46 +135,45 @@ export async function GET() {
     
     console.log(`[DEBUG] Found ${configFiles.length} config files, ${availableFiles.length} available for import`);
     
+    const responseData = {
+      total: configFiles.length,
+      available: availableFiles.length,
+      existing: existingFilenames.size,
+      files: availableFiles.map(file => ({
+        filename: file.filename,
+        name: file.parsedConfig?.bot_name || file.filename.replace('.json', ''),
+        timeframe: file.parsedConfig?.timeframe || 'N/A',
+        exchange: file.parsedConfig?.exchange?.name || 'N/A',
+        size: file.size,
+        lastModified: file.lastModified
+      }))
+    };
+    
+    // Validate the response data against the schema
+    const validatedResponseData = GetImportConfigsResponseDataSchema.parse(responseData);
+
     return NextResponse.json({
       success: true,
-      data: {
-        total: configFiles.length,
-        available: availableFiles.length,
-        existing: existingFilenames.size,
-        files: availableFiles.map(file => ({
-          filename: file.filename,
-          name: file.parsedConfig?.bot_name || file.filename.replace('.json', ''),
-          timeframe: file.parsedConfig?.timeframe || 'N/A',
-          exchange: file.parsedConfig?.exchange?.name || 'N/A',
-          size: file.size,
-          lastModified: file.lastModified
-        }))
-      },
+      data: validatedResponseData,
       message: 'Configuration files scanned successfully'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[DEBUG] Error scanning config files:', error);
-    return NextResponse.json(
-      {
-        error: 'Failed to scan config files',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    const errorResponse: APIErrorResponse = {
+      error: 'Failed to scan config files',
+      details: error instanceof z.ZodError ? error.issues : (error.message || 'Unknown error'),
+      type: error instanceof z.ZodError ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR',
+      timestamp: new Date(),
+    };
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { filenames } = body;
-
-    if (!filenames || !Array.isArray(filenames) || filenames.length === 0) {
-      return NextResponse.json(
-        { error: 'No filenames provided for import' },
-        { status: 400 }
-      );
-    }
+    const validatedBody = ImportConfigsRequestSchema.parse(body);
+    const { filenames } = validatedBody;
 
     console.log(`[DEBUG] Starting import of ${filenames.length} config files...`);
     
@@ -126,23 +186,14 @@ export async function POST(request: NextRequest) {
         const filepath = join(configsPath, filename);
         const content = await readFile(filepath, 'utf-8');
         
-        // Parse JSON config
+        // Parse and validate JSON config
         let parsedConfig;
         try {
-          parsedConfig = JSON.parse(content);
-        } catch (parseError) {
+          parsedConfig = FreqtradeConfigSchema.parse(JSON.parse(content));
+        } catch (parseError: any) {
           errors.push({
             filename,
-            error: 'Invalid JSON format in config file'
-          });
-          continue;
-        }
-
-        // Validate required fields
-        if (!parsedConfig.timeframe) {
-          errors.push({
-            filename,
-            error: 'Missing required field: timeframe'
+            error: parseError instanceof z.ZodError ? `Invalid config format: ${parseError.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}` : 'Invalid JSON format in config file'
           });
           continue;
         }
@@ -175,7 +226,7 @@ export async function POST(request: NextRequest) {
             name: configName,
             filename,
             description: `Imported from user_data on ${new Date().toLocaleDateString()}`,
-            data: cleanConfig
+            data: cleanConfig as Prisma.InputJsonValue // Type assertion to satisfy Prisma's Json type
           }
         });
 
@@ -191,24 +242,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const responseData = {
+      imported: importedConfigs.length,
+      total: filenames.length,
+      configs: importedConfigs,
+      errors
+    };
+
+    const validatedResponseData = PostImportConfigsResponseDataSchema.parse(responseData);
+
     return NextResponse.json({
       success: true,
-      data: {
-        imported: importedConfigs.length,
-        total: filenames.length,
-        configs: importedConfigs,
-        errors
-      },
+      data: validatedResponseData,
       message: `Successfully imported ${importedConfigs.length} of ${filenames.length} configurations`
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[DEBUG] Error importing configs:', error);
-    return NextResponse.json(
-      {
-        error: 'Failed to import configurations',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    const errorResponse: APIErrorResponse = {
+      error: 'Failed to import configurations',
+      details: error instanceof z.ZodError ? error.issues : (error.message || 'Unknown error'),
+      type: error instanceof z.ZodError ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR',
+      timestamp: new Date(),
+    };
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
