@@ -321,9 +321,8 @@ export default function StrategiesPage() {
                   <span className="truncate">{strategy.className}</span>
                   <div className="flex gap-1">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                       onClick={(e) => {
                         e.stopPropagation()
                         e.preventDefault()
@@ -344,9 +343,8 @@ export default function StrategiesPage() {
                     >
                       <AlertDialogTrigger asChild>
                         <Button
-                          variant="ghost"
+                          variant="destructive"
                           size="sm"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           onClick={(e) => {
                             e.stopPropagation()
                             e.preventDefault()

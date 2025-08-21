@@ -37,6 +37,21 @@ export default function StrategyBacktestList({ strategyId }: StrategyBacktestLis
     enabled: !!strategyId,
   })
 
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800'
+      case 'FAILED':
+        return 'bg-red-100 text-red-800'
+      case 'RUNNING':
+        return 'bg-blue-100 text-blue-800'
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   if (isLoading) {
     return <div>{t('loading')}</div>
   }
@@ -61,7 +76,7 @@ export default function StrategyBacktestList({ strategyId }: StrategyBacktestLis
           <TableRow key={backtest.id}>
             <TableCell className="font-medium">{backtest.name}</TableCell>
             <TableCell>
-              <Badge variant={backtest.status === 'COMPLETED' ? 'success' : backtest.status === 'FAILED' ? 'destructive' : 'secondary'}>
+              <Badge className={getStatusColor(backtest.status)}>
                 {backtest.status}
               </Badge>
             </TableCell>

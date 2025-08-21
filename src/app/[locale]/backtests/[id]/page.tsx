@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SummaryMetricsCard } from "@/components/SummaryMetricsCard"
-import { RefreshCw, Image, ArrowLeft } from 'lucide-react'
+import { RefreshCw, Image, ArrowLeft, CheckCircle2, XCircle, Loader2, Hourglass } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -169,14 +169,16 @@ export default function BacktestDetailPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">{typedBacktest.name}</h1>
         <div className="flex items-center space-x-4">
-          <span className={`px-2 py-1 rounded text-sm ${
-            typedBacktest.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-            typedBacktest.status === 'FAILED' ? 'bg-red-100 text-red-800' :
-            typedBacktest.status === 'RUNNING' ? 'bg-blue-100 text-blue-800' :
-            'bg-yellow-100 text-yellow-800'
-          }`}>
-            {typedBacktest.status}
-          </span>
+          <div className="flex items-center">
+            {
+              {
+                COMPLETED: <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800"><CheckCircle2 className="h-4 w-4 mr-1" />COMPLETED</span>,
+                FAILED: <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-red-100 text-red-800"><XCircle className="h-4 w-4 mr-1" />FAILED</span>,
+                RUNNING: <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800"><Loader2 className="h-4 w-4 mr-1 animate-spin" />RUNNING</span>,
+                PENDING: <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"><Hourglass className="h-4 w-4 mr-1" />PENDING</span>
+              }[typedBacktest.status] || <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800">{typedBacktest.status}</span>
+            }
+          </div>
           <span className="text-sm text-gray-600">
             {t('createdAt')}: {format(new Date(typedBacktest.createdAt), 'PPpp')}
           </span>
