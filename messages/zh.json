@@ -265,7 +265,8 @@
     "logs": {
       "title": "日志",
       "noLogs": "无日志可用"
-    }
+    },
+    "backToStrategy": "返回策略"
   },
   "StrategyManagement": {
     "title": "策略管理",
@@ -400,7 +401,8 @@
     "logs": {
       "title": "日志",
       "noLogs": "此回测任务没有可显示的日志。"
-    }
+    },
+    "backToStrategy": "返回策略"
   },
   "ConfigEditor": {
     "noIdProvided": "未提供ID",

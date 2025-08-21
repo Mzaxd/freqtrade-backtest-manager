@@ -5,11 +5,18 @@ import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import RealtimeLogViewer from '@/components/RealtimeLogViewer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SummaryMetricsCard } from "@/components/SummaryMetricsCard"
-import { RefreshCw, Image } from 'lucide-react'
+import { RefreshCw, Image, ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { format } from 'date-fns'
 import { TradesTable } from "@/components/TradesTable";
 import { EnhancedTradingChart } from "@/components/EnhancedTradingChart";
@@ -27,6 +34,7 @@ interface BacktestTask {
   logs: string
   strategy: {
     className: string
+    id: string
   }
   config: {
     name: string
@@ -141,7 +149,23 @@ export default function BacktestDetailPage() {
   const showLogs = ['RUNNING', 'PENDING'].includes(typedBacktest.status) || !!typedBacktest.logs
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 relative">
+      {typedBacktest.strategy.id && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href={`/strategies/${typedBacktest.strategy.id}`} className="absolute top-4 right-4">
+                <Button size="icon" variant="outline">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{t('backToStrategy')}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">{typedBacktest.name}</h1>
         <div className="flex items-center space-x-4">

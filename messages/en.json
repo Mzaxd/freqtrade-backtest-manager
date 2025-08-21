@@ -263,7 +263,8 @@
     "logs": {
       "title": "Logs",
       "noLogs": "No logs available"
-    }
+    },
+    "backToStrategy": "Back to Strategy"
   },
     "StrategyManagement": {
     "title": "Strategy Management",
@@ -398,7 +399,8 @@
     "logs": {
       "title": "Logs",
       "noLogs": "No logs to display for this backtest task."
-    }
+    },
+    "backToStrategy": "Back to Strategy"
   },
   "ConfigEditor": {
     "noIdProvided": "No ID provided",

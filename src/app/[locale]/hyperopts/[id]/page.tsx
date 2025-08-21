@@ -5,9 +5,15 @@ import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import RealtimeLogViewer from '@/components/RealtimeLogViewer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { RefreshCw, BarChart3, Play, Download } from 'lucide-react'
+import { RefreshCw, BarChart3, Play, Download, ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { format } from 'date-fns'
@@ -166,7 +172,23 @@ export default function HyperoptDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 relative">
+      {typedHyperopt.strategy.id && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href={`/strategies/${typedHyperopt.strategy.id}`} className="absolute top-4 right-4">
+                <Button size="icon" variant="outline">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{t('backToStrategy')}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
       <div className="mb-6">
         <div className="flex justify-between items-start">
           <div>
