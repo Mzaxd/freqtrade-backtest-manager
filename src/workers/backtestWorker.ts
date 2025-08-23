@@ -8,6 +8,33 @@ import { TradeData, BacktestResultsSummary } from '@/types/chart'
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
 
+// Helper function to format duration from object to string
+const formatDuration = (duration: any): string => {
+  if (typeof duration === 'string') {
+    return duration;
+  }
+  if (typeof duration === 'object' && duration !== null) {
+    const parts = [];
+    if (duration.days) parts.push(`${duration.days}d`);
+    if (duration.hours) parts.push(`${duration.hours}h`);
+    if (duration.minutes) parts.push(`${duration.minutes}m`);
+    if (parts.length === 0) return '0m';
+    return parts.join(' ');
+  }
+  return 'N/A';
+};
+
+// Helper function to format pair metrics from array to object
+const formatPairMetrics = (pairData: any): { pair: string; profit_sum: number } | null => {
+  if (Array.isArray(pairData) && pairData.length === 2 && typeof pairData[0] === 'string' && typeof pairData[1] === 'number') {
+    return { pair: pairData[0], profit_sum: pairData[1] };
+  }
+  if (typeof pairData === 'object' && pairData !== null && 'pair' in pairData && 'profit_sum' in pairData) {
+    return pairData;
+  }
+  return null;
+};
+
 // 重命名数据文件为可识别的名称
 async function renameDataFileForBacktest(
   exchange: string,
@@ -64,33 +91,28 @@ async function fileExists(filePath: string) {
 async function findLatestBacktestResult(resultsDir: string, taskId: string): Promise<string | null> {
   const fs = await import('fs').then(m => m.promises);
   const maxRetries = 5;
-  const retryDelay = 2000; // 2 seconds, to be safe
+  const retryDelay = 2000; // 2 seconds
 
   for (let i = 0; i < maxRetries; i++) {
     try {
       const files = await fs.readdir(resultsDir);
-      // Freqtrade can sometimes add suffixes before the .json, so we look for files starting with the base name.
+      // New freqtrade versions store everything in a single JSON file.
+      // We look for a file that is NOT a .meta.json but matches the task ID.
       const taskFilePrefix = `backtest-result-cli-${taskId}`;
-      const matchingFiles = files.filter(file => file.startsWith(taskFilePrefix) && file.endsWith('.json'));
+      const matchingFiles = files.filter(file =>
+        file.startsWith(taskFilePrefix) &&
+        file.endsWith('.json') &&
+        !file.endsWith('.meta.json')
+      );
 
       if (matchingFiles.length > 0) {
-        // Prefer the .meta.json file as it contains the summary statistics.
-        const metaFile = matchingFiles.find(file => file.endsWith('.meta.json'));
-        if (metaFile) {
-          const filePath = path.join(resultsDir, metaFile);
-          console.log(`Found result file: ${filePath}`);
-          return filePath;
-        }
-        
-        // Fallback to the first matching file if no .meta.json is found.
-        // This could be the trades file.
-        const anyJsonFile = matchingFiles[0];
-        const filePath = path.join(resultsDir, anyJsonFile);
-        console.log(`Found result file (fallback, non-meta): ${filePath}`);
+        // Sort to get the most recent one if multiple exist (unlikely)
+        matchingFiles.sort().reverse();
+        const filePath = path.join(resultsDir, matchingFiles[0]);
+        console.log(`Found primary result file: ${filePath}`);
         return filePath;
       }
     } catch (error: any) {
-      // ENOENT means the directory doesn't exist, which is a valid case if no results have ever been generated.
       if (error.code !== 'ENOENT') {
         console.error(`Error reading results directory (attempt ${i + 1}/${maxRetries}):`, error);
       }
@@ -102,29 +124,21 @@ async function findLatestBacktestResult(resultsDir: string, taskId: string): Pro
     }
   }
 
-  console.warn(`No result file found for task ${taskId} in ${resultsDir} after ${maxRetries} retries.`);
-  const possibleFiles = [
-    `backtest-result-cli-${taskId}.json`,
-    `backtest-result-cli-${taskId}.meta.json`
-  ];
-  console.warn(`Expected files starting with: ${possibleFiles.join(' or ')}`);
+  console.warn(`No primary result file found for task ${taskId} in ${resultsDir} after ${maxRetries} retries.`);
+  console.warn(`Expected a file starting with: backtest-result-cli-${taskId}*.json`);
   return null;
 }
 
 interface BacktestResult {
-  [strategyName: string]: {
-    trades?: TradeData[]
-    total_trades?: number
-    wins?: number
-    losses?: number
-    draws?: number
-    profit_total?: number
-    profit_total_abs?: number
-    stake_currency?: string
-    avg_duration?: string
-    best_pair?: string
-    worst_pair?: string
-  }
+  strategy: {
+    [strategyName: string]: BacktestResultsSummary & {
+      trades: TradeData[];
+      results_per_pair: any[];
+      exit_reason_summary: any[];
+      left_open_trades: any[];
+    };
+  };
+  strategy_comparison: any[];
 }
 
 interface OverrideParams {
@@ -140,7 +154,7 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
     // 更新任务状态为 RUNNING
     await prisma.backtestTask.update({
       where: { id: taskId },
-      data: { status: Prisma.BacktestStatus.RUNNING },
+      data: { status: 'RUNNING' },
     })
 
     // 获取任务详情
@@ -176,7 +190,7 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
       '--strategy', backtestTask.strategy.className,
       '--strategy-path', path.posix.join(containerUserDataPath, 'strategies'),
       '--timerange', `${backtestTask.timerangeStart?.toISOString().split('T')[0].replace(/-/g, '')}-${backtestTask.timerangeEnd?.toISOString().split('T')[0].replace(/-/g, '')}`,
-      '--export', 'trades,meta',
+      '--export', 'trades',
       '--export-filename', path.posix.join(containerUserDataPath, 'backtest_results', exportFilename),
       '--cache', 'none',
     ]
@@ -301,6 +315,15 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
           throw new Error("Main result file is empty.");
         }
 
+        // 增加日志记录原始文件内容
+        logs.push(`\n--- Raw Result File Content (from ${resultPath}) ---\n`);
+        logs.push(resultData);
+        logs.push(`\n--- End of Raw Result File Content ---\n`);
+        redis.publish(`logs:${taskId}`, `\n--- Raw Result File Content (from ${resultPath}) ---\n`);
+        redis.publish(`logs:${taskId}`, resultData + '\n');
+        redis.publish(`logs:${taskId}`, `\n--- End of Raw Result File Content ---\n`);
+        console.log(`[${taskId}] Raw result data from ${resultPath}:\n${resultData}`);
+
         let result: BacktestResult;
         try {
           result = JSON.parse(resultData) as BacktestResult;
@@ -310,64 +333,25 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
           throw new Error(`Invalid JSON in result file: ${(parseError as Error).message}`);
         }
 
-        // The strategy name is the first key in the result object.
-        const strategyName = Object.keys(result)[0];
+        // The strategy name is the first key in the result.strategy object.
+        const strategyName = Object.keys(result.strategy)[0];
         if (!strategyName) {
           throw new Error("Strategy name not found in result object.");
         }
-        const strategyResult = result[strategyName];
+        const strategyResult = result.strategy[strategyName];
 
-        // Debug: Log the structure of the result
-        console.log(`[${taskId}] Result file structure keys:`, Object.keys(strategyResult));
-        console.log(`[${taskId}] Sample result data:`, JSON.stringify(strategyResult, null, 2).substring(0, 500));
+        // The new format contains all necessary info in one file.
+        resultsSummary = strategyResult as BacktestResultsSummary;
+        console.log(`[${taskId}] Using summary statistics from the main result file.`);
 
-        // Check if this is a meta.json file (contains summary statistics)
-        if (strategyResult.trades && !strategyResult.total_trades) {
-          console.log(`[${taskId}] Detected trades-only file, looking for meta.json...`);
-          // This is a trades file, we need to find the meta.json file
-          const metaFilePath = resultPath.replace('.json', '.meta.json');
-          if (await fileExists(metaFilePath)) {
-            console.log(`[${taskId}] Found meta.json file: ${metaFilePath}`);
-            const metaData = await fs.readFile(metaFilePath, 'utf8');
-            const metaResult = JSON.parse(metaData) as BacktestResult;
-            const metaStrategyName = Object.keys(metaResult)[0];
-            if (metaStrategyName && metaResult[metaStrategyName]) {
-              // Use the meta.json for summary statistics and keep trades data separate
-              resultsSummary = metaResult[metaStrategyName] as BacktestResultsSummary;
-              console.log(`[${taskId}] Using meta.json for summary statistics`);
-            }
-          } else {
-            console.log(`[${taskId}] No meta.json file found, calculating summary from trades...`);
-            // Calculate summary statistics from trades
-            const trades = strategyResult.trades || [];
-            const wins = trades.filter((t: TradeData) => t.profit_pct > 0).length;
-            const losses = trades.filter((t: TradeData) => t.profit_pct < 0).length;
-            const draws = trades.filter((t: TradeData) => t.profit_pct === 0).length;
-            const totalProfit = trades.reduce((sum: number, t: TradeData) => sum + t.profit_abs, 0);
-            const profitTotal = trades.reduce((sum: number, t: TradeData) => sum + t.profit_pct, 0);
-            
-            resultsSummary = {
-              total_trades: trades.length,
-              wins,
-              losses,
-              draws,
-              profit_total: profitTotal / 100, // Convert percentage to decimal
-              profit_total_abs: totalProfit,
-              stake_currency: 'USDT', // Default, should be from config
-              avg_duration: 'N/A',
-              best_pair: 'N/A',
-              worst_pair: 'N/A',
-              // Add other required fields with default/placeholder values
-              max_drawdown: 0,
-              win_rate: trades.length > 0 ? wins / trades.length : 0,
-              profit_factor: 0, // Cannot be calculated without gross profit/loss
-            };
-            console.log(`[${taskId}] Calculated summary from trades:`, resultsSummary);
-          }
-        } else {
-          // This is already a meta.json file or contains summary statistics
-          resultsSummary = strategyResult as BacktestResultsSummary;
-          console.log(`[${taskId}] Using existing summary statistics from result file`);
+        // 数据格式化
+        if (resultsSummary) {
+          // @ts-ignore
+          resultsSummary.avg_duration = formatDuration(resultsSummary.holding_avg);
+          // @ts-ignore
+          resultsSummary.best_pair = formatPairMetrics(resultsSummary.best_pair);
+          // @ts-ignore
+          resultsSummary.worst_pair = formatPairMetrics(resultsSummary.worst_pair);
         }
 
         isSuccess = true; // Mark as success only if parsing is successful
@@ -418,13 +402,26 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
       await prisma.backtestTask.update({
         where: { id: taskId },
         data: {
-          status: Prisma.BacktestStatus.COMPLETED,
+          status: 'COMPLETED',
           completedAt: new Date(),
           resultsSummary: resultsSummary ?? Prisma.JsonNull,
           rawOutputPath: resultPath,
           plotProfitUrl: null, // This can be populated later
           candleDataFile: candleDataFile,
           logs: logs.join('\n'),
+          // Populate new metrics
+          totalTrades: resultsSummary?.total_trades,
+          avgTradeDuration: resultsSummary?.holding_avg_s,
+          avgProfit: resultsSummary?.profit_mean,
+          totalVolume: resultsSummary?.total_volume,
+          profitFactor: resultsSummary?.profit_factor,
+          expectancy: resultsSummary?.expectancy,
+          sharpe: resultsSummary?.sharpe,
+          sortino: resultsSummary?.sortino,
+          calmar: resultsSummary?.calmar,
+          cagr: resultsSummary?.cagr,
+          maxDrawdown: resultsSummary?.max_drawdown_account,
+          marketChange: resultsSummary?.market_change,
         },
       });
     } else {
@@ -438,7 +435,7 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
       await prisma.backtestTask.update({
         where: { id: taskId },
         data: {
-          status: Prisma.BacktestStatus.FAILED,
+          status: 'FAILED',
           completedAt: new Date(),
           logs: fullLogs,
           rawOutputPath: resultPath, // Still save the path for debugging
@@ -453,7 +450,7 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
     await prisma.backtestTask.update({
       where: { id: taskId },
       data: {
-        status: Prisma.BacktestStatus.FAILED,
+        status: 'FAILED',
         completedAt: new Date(),
         logs: error instanceof Error ? error.message : String(error), // Convert non-Error objects to string
       },

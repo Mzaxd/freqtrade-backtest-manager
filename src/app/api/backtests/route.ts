@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         status: 'PENDING',
-        strategyId: parseInt(strategyId),
-        configId: parseInt(configId),
+        strategyId: strategyId,
+        configId: configId,
         timeframe,
         timerangeStart: timerangeStart ? new Date(timerangeStart) : null,
         timerangeEnd: timerangeEnd ? new Date(timerangeEnd) : null,

@@ -103,9 +103,9 @@ export default function StrategiesPage() {
 
   const { mutate: performImport, isPending: isImporting } = useMutation({
     mutationFn: importStrategies,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['strategies'] })
-      queryClient.invalidateQueries({ queryKey: ['importable-strategies'] })
+    onSuccess: async () => {
+      // Remove the strategies query from the cache to force a refetch on the next page
+      await queryClient.removeQueries({ queryKey: ['strategies'] })
       setIsImportDialogOpen(false)
       setSelectedFiles([])
     },

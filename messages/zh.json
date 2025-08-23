@@ -310,6 +310,8 @@
     "configNameLabel": "名称",
     "timeframeLabel": "时间框架",
     "exchangeLabel": "交易所",
+    "sizeLabel": "大小",
+    "importing": "导入中...",
     "noConfigFilesFound": "没有找到可导入的配置文件",
     "importSuccess": "配置导入成功",
     "importFailed": "导入失败: {error}",
@@ -359,7 +361,8 @@
       "configRequired": "请选择配置",
       "timeRangeRequired": "请选择时间范围",
       "timeRangeInvalid": "结束时间必须晚于开始时间"
-    }
+    },
+    "noStrategiesAvailable": "没有可用策略"
   },
   "BacktestDetail": {
     "createdAt": "创建时间",

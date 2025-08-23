@@ -109,58 +109,60 @@ export async function POST(request: NextRequest) {
     console.log(`[DEBUG] Starting import of ${filenames.length} strategy files...`);
     
     const strategiesPath = getStrategiesPath();
-    const importedStrategies = [];
-    const errors = [];
+    const importedStrategies: any[] = [];
+    const errors: { filename: string; error: string }[] = [];
 
-    for (const filename of filenames) {
-      try {
-        const filepath = join(strategiesPath, filename);
-        const content = await readFile(filepath, 'utf-8');
-        
-        // Extract class name
-        const match = content.match(/class\s+([a-zA-Z0-9_]+)\s*\(/);
-        if (!match || !match[1]) {
-          errors.push({
-            filename,
-            error: 'Could not parse class name from strategy file'
-          });
-          continue;
-        }
-        const className = match[1];
-
-        // Check if already exists
-        const existingStrategy = await prisma.strategy.findUnique({
-          where: { filename }
-        });
-
-        if (existingStrategy) {
-          errors.push({
-            filename,
-            error: 'Strategy already exists in database'
-          });
-          continue;
-        }
-
-        // Create strategy record
-        const strategy = await prisma.strategy.create({
-          data: {
-            filename,
-            className,
-            description: `Imported from user_data on ${new Date().toLocaleDateString()}`
+    await prisma.$transaction(async (tx) => {
+      for (const filename of filenames) {
+        try {
+          const filepath = join(strategiesPath, filename);
+          const content = await readFile(filepath, 'utf-8');
+          
+          // Extract class name
+          const match = content.match(/class\s+([a-zA-Z0-9_]+)\s*\(/);
+          if (!match || !match[1]) {
+            errors.push({
+              filename,
+              error: 'Could not parse class name from strategy file'
+            });
+            continue;
           }
-        });
+          const className = match[1];
 
-        importedStrategies.push(strategy);
-        console.log(`[DEBUG] Successfully imported strategy: ${filename}`);
-        
-      } catch (error) {
-        console.error(`[DEBUG] Error importing strategy ${filename}:`, error);
-        errors.push({
-          filename,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+          // Check if already exists using the transaction client
+          const existingStrategy = await tx.strategy.findUnique({
+            where: { filename }
+          });
+
+          if (existingStrategy) {
+            errors.push({
+              filename,
+              error: 'Strategy already exists in database'
+            });
+            continue;
+          }
+
+          // Create strategy record using the transaction client
+          const strategy = await tx.strategy.create({
+            data: {
+              filename,
+              className,
+              description: `Imported from user_data on ${new Date().toLocaleDateString()}`
+            }
+          });
+
+          importedStrategies.push(strategy);
+          console.log(`[DEBUG] Successfully imported strategy: ${filename}`);
+          
+        } catch (error) {
+          console.error(`[DEBUG] Error importing strategy ${filename}:`, error);
+          errors.push({
+            filename,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
       }
-    }
+    }); // End of transaction
 
     return NextResponse.json({
       success: true,

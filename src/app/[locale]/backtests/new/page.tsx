@@ -40,13 +40,21 @@ interface HyperoptResult {
 }
 
 async function getStrategies() {
-  const response = await fetch('/api/strategies')
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to fetch strategies')
+  try {
+    console.log('[DEBUG] Fetching strategies...');
+    const response = await fetch('/api/strategies');
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('[DEBUG] Failed to fetch strategies:', error);
+      throw new Error(error.error || 'Failed to fetch strategies');
+    }
+    const data = await response.json();
+    console.log('[DEBUG] Strategies fetched successfully:', data);
+    return data.data || data || [];
+  } catch (error) {
+    console.error('[DEBUG] Error in getStrategies:', error);
+    throw error;
   }
-  const data = await response.json()
-  return data.data || data || []
 }
 
 async function getConfigs() {
@@ -100,10 +108,10 @@ export default function NewBacktestPage() {
   const [error, setError] = useState<string | null>(null)
   const [hyperoptData, setHyperoptData] = useState<HyperoptResult | null>(null)
 
-  const { data: strategies, isLoading: strategiesLoading, error: strategiesError } = useQuery<Strategy[]>({
+  const { data: strategies, isLoading: strategiesLoading, error: strategiesError } = useQuery<Strategy[], Error>({
     queryKey: ['strategies'],
     queryFn: getStrategies,
-  })
+  });
 
   const { data: configs, isLoading: configsLoading, error: configsError } = useQuery<Config[]>({
     queryKey: ['configs'],
@@ -195,6 +203,8 @@ export default function NewBacktestPage() {
 
     mutation.mutate({
       ...formData,
+      strategyId: parseInt(formData.strategyId, 10),
+      configId: parseInt(formData.configId, 10),
       timerangeStart: new Date(formData.timerangeStart).toISOString(),
       timerangeEnd: new Date(formData.timerangeEnd).toISOString(),
       hyperoptParams: formData.hyperoptParams,
@@ -212,7 +222,9 @@ export default function NewBacktestPage() {
             <h3 className="text-lg font-medium text-red-800">{t('loadError.title')}</h3>
           </div>
           <p className="mt-2 text-sm text-red-700">
-            {(strategiesError || configsError)?.message || t('loadError.message')}
+            {strategiesError ? `策略加载失败: ${strategiesError.message}` : ''}
+            {configsError ? `配置加载失败: ${configsError.message}` : ''}
+            {(!strategiesError && !configsError) ? t('loadError.message') : ''}
           </p>
         </div>
       </div>
@@ -298,11 +310,15 @@ export default function NewBacktestPage() {
                   <SelectValue placeholder={t('selectStrategy')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {strategies?.map((strategy: Strategy) => (
-                    <SelectItem key={strategy.id} value={String(strategy.id)}>
-                      {strategy.className}
-                    </SelectItem>
-                  ))}
+                  {(strategies || []).length > 0 ? (
+                    (strategies || []).map((strategy: Strategy) => (
+                      <SelectItem key={strategy.id} value={String(strategy.id)}>
+                        {strategy.className}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem disabled value="">{t('noStrategiesAvailable')}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

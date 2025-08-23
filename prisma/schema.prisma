@@ -76,6 +76,21 @@ model BacktestTask {
   // 数据文件下载任务ID
   dataDownloadJobId      String?
 
+  // 新增的详细指标
+  totalTrades       Int?
+  avgTradeDuration  Float? // in seconds
+  avgProfit         Float?
+  totalVolume       Float?
+  profitFactor      Float?
+  expectancy        Float?
+  sharpe            Float?
+  sortino           Float?
+  calmar            Float?
+  cagr              Float?
+  maxDrawdown       Float?
+  marketChange      Float?
+
+
   @@index([status])
   @@index([strategyId])
   @@index([configId])
