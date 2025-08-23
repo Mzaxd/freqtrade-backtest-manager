@@ -42,3 +42,7 @@ next-env.d.ts
 
 /src/generated/prisma
 .kilocode
+
+# 你也可以更精确地指定 .bmad-core 内部的文件夹
+# .bmad-core/cache/
+# .bmad-core/logs/

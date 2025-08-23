@@ -40,8 +40,8 @@ export interface ChartProps extends ChartEventHandlers {
   className?: string
 }
 
-export function CandlestickChart({ 
-  data, 
+export function CandlestickChart({
+  data,
   tradeMarkers = [],
   width = 800,
   height = 600,
@@ -56,14 +56,14 @@ export function CandlestickChart({
   performanceMode = false,
   className = ''
 }: ChartProps) {
- const chartContainerRef = useRef<HTMLDivElement>(null)
- const chartRef = useRef<IChartApi | null>(null)
- const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
- const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null)
- const markersDataRef = useRef<TradeMarker[]>([])
- const tooltipRef = useRef<HTMLDivElement>(null)
- const tradeTooltipRef = useRef<HTMLDivElement>(null)
- const [error, setError] = useState<ChartError | null>(null)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
+  const chartRef = useRef<IChartApi | null>(null)
+  const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null)
+  const markersDataRef = useRef<TradeMarker[]>([])
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  const tradeTooltipRef = useRef<HTMLDivElement>(null)
+  const [error, setError] = useState<ChartError | null>(null)
 
   // 显示交易工具提示
   const showTradeTooltip = (trade: TradeMarker, point: { x: number; y: number }) => {
@@ -73,12 +73,12 @@ export function CandlestickChart({
       tooltip.style.top = `${point.y - 10}px`
       tooltip.style.display = 'block'
       tooltip.style.opacity = '1'
-      
+
       // 格式化交易数据
       const tradeData = trade.tradeData
       const isProfitable = tradeData.profit_pct > 0
       const tradeType = tradeData.type === 'open' ? '开仓' : '平仓'
-      
+
       tooltip.innerHTML = `
         <div class="font-medium text-${isProfitable ? 'green' : 'red'}-600">
           ${tradeType} - ${tradeData.pair}
@@ -136,11 +136,11 @@ export function CandlestickChart({
         backgroundColor: defaultTheme.backgroundColor,
       },
       grid: {
-        vertLines: { 
+        vertLines: {
           color: showGrid ? defaultTheme.gridColor : 'transparent',
           style: LineStyle.Dashed,
         },
-        horzLines: { 
+        horzLines: {
           color: showGrid ? defaultTheme.gridColor : 'transparent',
           style: LineStyle.Dashed,
         },
@@ -194,7 +194,7 @@ export function CandlestickChart({
         details: err,
         timestamp: new Date()
       }
-        setError(chartError)
+      setError(chartError)
       onError?.(chartError)
       return
     }
@@ -245,13 +245,13 @@ export function CandlestickChart({
         sourceEvent: param.sourceEvent,
       };
       onCrosshairMove?.(crosshairMoveParams);
-      
+
       // 更新工具提示位置
       if (tooltipRef.current && param.point) {
         tooltipRef.current.style.left = `${param.point.x + 10}px`
         tooltipRef.current.style.top = `${param.point.y + 10}px`
       }
-      
+
       // 检查是否悬停在交易标记上
       if (param.time && param.point) {
         const hoveredTrade = tradeMarkers.find(trade => trade.time === param.time)
@@ -272,7 +272,7 @@ export function CandlestickChart({
         const clickedTrade = tradeMarkers.find(trade =>
           trade.time === param.time
         )
-        
+
         if (clickedTrade) {
           onTradeClick?.(clickedTrade.tradeData)
         }
@@ -334,7 +334,7 @@ export function CandlestickChart({
           size: 1,
           tradeData: t.tradeData, // Ensure tradeData is included
         }))
-        
+
         seriesRef.current.setMarkers(mappedTrades)
         markersDataRef.current = mappedTrades
         setError(null)
@@ -368,7 +368,7 @@ export function CandlestickChart({
         </div>
       )}
       <div ref={chartContainerRef} className="w-full" />
-      <div 
+      <div
         ref={tooltipRef}
         className="absolute top-0 left-0 bg-gray-900 text-white p-2 rounded shadow-lg text-sm pointer-events-none opacity-0 transition-opacity"
         style={{ display: 'none' }}
@@ -376,7 +376,7 @@ export function CandlestickChart({
         <div className="font-medium">价格信息</div>
         <div id="tooltip-content" />
       </div>
-      <div 
+      <div
         ref={tradeTooltipRef}
         className="absolute top-0 left-0 bg-gray-900 text-white p-3 rounded shadow-lg text-sm pointer-events-none opacity-0 transition-opacity z-10"
         style={{ display: 'none', minWidth: '200px' }}

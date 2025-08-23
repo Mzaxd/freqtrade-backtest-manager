@@ -29,38 +29,81 @@ async function fileExists(filePath: string) {
     return false
   }
 }
-
-// 从回测专用的数据文件中读取K线数据
-async function readCandlestickDataFromBacktestFile(
-  candleDataFile: string,
+// 从 MarketData 记录中读取K线数据（新增的最终备用方案）
+async function readCandlestickDataFromMarketData(
+  pair: string,
+  timeframe: string,
   timerangeStart?: Date,
   timerangeEnd?: Date
 ) {
-  if (!candleDataFile) {
+  console.log(`Attempting to read candle data from MarketData for pair: ${pair}, timeframe: ${timeframe}`);
+  
+  const marketData = await prisma.marketData.findFirst({
+    where: {
+      pair: pair,
+      timeframe: timeframe,
+      status: 'available'
+    }
+  });
+
+  if (!marketData || !marketData.filePath) {
+    console.error(`No available MarketData record or file path for ${pair} and ${timeframe}.`);
     return null;
   }
 
-  console.log(`Attempting to read candle data from backtest file: ${candleDataFile}`);
-
-  if (!(await fileExists(candleDataFile))) {
-    console.error(`Backtest candle data file not found at: ${candleDataFile}`);
+  // Validate file path to prevent directory traversal
+  if (!validateFilePath(marketData.filePath)) {
+    console.error(`Invalid file path in MarketData: ${marketData.filePath}`);
     return null;
   }
+  
+  return readCandlestickDataFromFile(marketData.filePath, timerangeStart, timerangeEnd);
+}
+
+// 通用的从文件读取并解析K线数据的函数
+async function readCandlestickDataFromFile(
+  filePath: string,
+  timerangeStart?: Date,
+  timerangeEnd?: Date
+) {
+  if (!filePath || !(await fileExists(filePath))) {
+    console.error(`Candle data file not found or path is null: ${filePath}`);
+    return null;
+  }
+  
+  console.log(`Reading and parsing candle data from: ${filePath}`);
 
   try {
-    const fileContent = await fs.readFile(candleDataFile, 'utf-8');
+    const fileContent = await fs.readFile(filePath, 'utf-8');
     const data = JSON.parse(fileContent);
 
-    if (!Array.isArray(data) || data.length === 0) {
-      console.error("Candle data is not in the expected array format or is empty.");
+    if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
+      console.error("Candle data is not in the expected format or is empty.", data);
       return null;
     }
+
+    interface Candle {
+        time: number;
+        open: number;
+        high: number;
+        low: number;
+        close: number;
+        volume: number;
+    }
     
-    // Freqtrade数据格式: [timestamp, open, high, low, close, volume]
-    let candles = data.map((row: unknown) => {
-      const validatedRow = RawCandlestickDataSchema.parse(row); // Validate raw data
+    // Freqtrade 数据格式: [timestamp, open, high, low, close, volume]
+    let candles: Candle[] = data.data.map((row: any[]) => {
+      const validatedRow = {
+        time: row[0],
+        open: row[1],
+        high: row[2],
+        low: row[3],
+        close: row[4],
+        volume: row[5],
+      };
+      
       return {
-        time: Math.floor(validatedRow.time as number / 1000), // ms to s
+        time: Math.floor(validatedRow.time / 1000), // ms to s
         open: validatedRow.open,
         high: validatedRow.high,
         low: validatedRow.low,
@@ -73,15 +116,28 @@ async function readCandlestickDataFromBacktestFile(
     if (timerangeStart && timerangeEnd) {
       const startTimestamp = Math.floor(timerangeStart.getTime() / 1000);
       const endTimestamp = Math.floor(timerangeEnd.getTime() / 1000);
-      candles = candles.filter(c => c.time >= startTimestamp && c.time <= endTimestamp);
+      candles = candles.filter((c: Candle) => c.time >= startTimestamp && c.time <= endTimestamp);
     }
     
-    console.log(`Found and parsed ${candles.length} candles from backtest file.`);
+    console.log(`Found and parsed ${candles.length} candles from file.`);
     return candles;
   } catch (error) {
-    console.error(`Failed to read or parse candle data from ${candleDataFile}:`, error);
+    console.error(`Failed to read or parse candle data from ${filePath}:`, error);
     return null;
   }
+}
+// 从回测专用的数据文件中读取K线数据
+async function readCandlestickDataFromBacktestFile(
+  candleDataFile: string,
+  timerangeStart?: Date,
+  timerangeEnd?: Date
+) {
+  if (!candleDataFile) {
+    return null;
+  }
+
+  console.log(`Attempting to read candle data from backtest file: ${candleDataFile}`);
+  return readCandlestickDataFromFile(candleDataFile, timerangeStart, timerangeEnd);
 }
 
 // 从Freqtrade数据目录中读取K线数据（备用方案）
@@ -108,49 +164,8 @@ async function readCandlestickDataFromDataDir(
   const dataDir = path.join(userDataPath, 'data', exchange.toLowerCase());
   const candleFile = `${pairPath}-${timeframe}.json`;
   const fullPath = path.join(dataDir, candleFile);
-
-  console.log(`Attempting to read candle data from: ${fullPath}`);
-
-  if (!(await fileExists(fullPath))) {
-    console.error(`Candle data file not found at: ${fullPath}`);
-    return null;
-  }
-
-  try {
-    const fileContent = await fs.readFile(fullPath, 'utf-8');
-    const data = JSON.parse(fileContent);
-
-    if (!Array.isArray(data) || data.length === 0) {
-      console.error("Candle data is not in the expected array format or is empty.");
-      return null;
-    }
-    
-    // Freqtrade数据格式: [timestamp, open, high, low, close, volume]
-    let candles = data.map((row: unknown) => {
-      const validatedRow = RawCandlestickDataSchema.parse(row); // Validate raw data
-      return {
-        time: Math.floor(validatedRow.time as number / 1000), // ms to s
-        open: validatedRow.open,
-        high: validatedRow.high,
-        low: validatedRow.low,
-        close: validatedRow.close,
-        volume: validatedRow.volume,
-      };
-    });
-
-    // 根据回测时间范围过滤
-    if (timerangeStart && timerangeEnd) {
-      const startTimestamp = Math.floor(timerangeStart.getTime() / 1000);
-      const endTimestamp = Math.floor(timerangeEnd.getTime() / 1000);
-      candles = candles.filter(c => c.time >= startTimestamp && c.time <= endTimestamp);
-    }
-    
-    console.log(`Found and parsed ${candles.length} candles for ${pair}.`);
-    return candles;
-  } catch (error) {
-    console.error(`Failed to read or parse candle data from ${fullPath}:`, error);
-    return null;
-  }
+  
+  return readCandlestickDataFromFile(fullPath, timerangeStart, timerangeEnd);
 }
 
 export async function GET(
@@ -199,17 +214,9 @@ export async function GET(
       );
     }
     
-    // 优先从回测专用的数据文件中读取K线数据
+    // 1. 优先从回测专用的数据文件中读取
     let candleData = null;
-    if (backtest.candleDataFile) {
-      // Validate file path to prevent directory traversal
-      if (!validateFilePath(backtest.candleDataFile)) {
-        return NextResponse.json(
-          createErrorResponse('VALIDATION_ERROR', 'Invalid file path', 'INVALID_FILE_PATH'),
-          { status: 400 }
-        );
-      }
-      
+    if (backtest.candleDataFile && validateFilePath(backtest.candleDataFile)) {
       candleData = await readCandlestickDataFromBacktestFile(
         backtest.candleDataFile,
         backtest.timerangeStart || undefined,
@@ -217,7 +224,7 @@ export async function GET(
       );
     }
     
-    // 如果没有专用的数据文件，则从原始数据目录读取
+    // 2. 如果没有，则从 Freqtrade 原始数据目录读取
     if (!candleData) {
       candleData = await readCandlestickDataFromDataDir(
         validatedQuery.pair,
@@ -225,6 +232,16 @@ export async function GET(
         backtest.timerangeStart || undefined,
         backtest.timerangeEnd || undefined
       );
+    }
+    
+    // 3. 如果还是没有，尝试从 MarketData 表中查找
+    if (!candleData) {
+        candleData = await readCandlestickDataFromMarketData(
+            validatedQuery.pair,
+            validatedQuery.timeframe,
+            backtest.timerangeStart || undefined,
+            backtest.timerangeEnd || undefined
+        );
     }
 
     // 转换交易数据格式

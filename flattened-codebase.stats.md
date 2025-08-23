@@ -79,8 +79,8 @@ Avg: 20,939 B, Median: 4,956 B, p90: 31,758 B, p95: 72,015 B, p99: 412,327 B
 | expansion-packs\bmad-creative-writing\checklists\romance-emotional-beats-checklist.md | 85 | 606 |
 | expansion-packs\bmad-creative-writing\checklists\thriller-pacing-stakes-checklist.md | 84 | 655 |
 | expansion-packs\bmad-creative-writing\checklists\publication-readiness-checklist.md | 83 | 662 |
-| expansion-packs\bmad-creative-writing\checklists\character-consistency-checklist.md | 83 | 737 |
 | expansion-packs\bmad-creative-writing\checklists\beta-feedback-closure-checklist.md | 83 | 675 |
+| expansion-packs\bmad-creative-writing\checklists\character-consistency-checklist.md | 83 | 737 |
 | expansion-packs\bmad-2d-phaser-game-dev\agent-teams\phaser-2d-nodejs-game-team.yaml | 83 | 330 |
 | web-bundles\expansion-packs\bmad-creative-writing\agents\character-psychologist.txt | 83 | 30,672 |
 | expansion-packs\bmad-creative-writing\checklists\foreshadowing-payoff-checklist.md | 82 | 680 |
@@ -91,13 +91,13 @@ Avg: 20,939 B, Median: 4,956 B, p90: 31,758 B, p95: 72,015 B, p99: 412,327 B
 | expansion-packs\bmad-creative-writing\checklists\cyberpunk-aesthetic-checklist.md | 81 | 708 |
 | expansion-packs\bmad-creative-writing\checklists\ya-appropriateness-checklist.md | 80 | 700 |
 | expansion-packs\bmad-creative-writing\checklists\mystery-clue-trail-checklist.md | 80 | 705 |
-| expansion-packs\bmad-creative-writing\checklists\line-edit-quality-checklist.md | 79 | 594 |
 | expansion-packs\bmad-creative-writing\checklists\orbital-mechanics-checklist.md | 79 | 814 |
+| expansion-packs\bmad-creative-writing\checklists\line-edit-quality-checklist.md | 79 | 594 |
 | expansion-packs\bmad-creative-writing\checklists\epic-poetry-meter-checklist.md | 79 | 741 |
 
 ## ⏱️ Temporal
 - Oldest: LICENSE (2025-08-23T14:02:31.615Z)
-- Newest: flattened-codebase.stats.md (2025-08-23T14:24:41.338Z)
+- Newest: flattened-codebase.stats.md (2025-08-23T14:40:14.888Z)
 
 | Age | Files | Bytes |
 | --- | ---: | ---: |
