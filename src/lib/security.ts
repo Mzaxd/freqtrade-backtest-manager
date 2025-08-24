@@ -29,8 +29,13 @@ export const CommonSchemas = {
   
   // Date validations
   isoDate: z.string().datetime('ISO datetime required'),
-  futureDate: z.date().ref(val => val > new Date(), 'Date must be in the future'),
-  pastDate: z.date().ref(val => val < new Date(), 'Date must be in the past'),
+  futureDate: z.date().min(new Date(), 'Date must be in the future'),
+  pastDate: z.date().max(new Date(), 'Date must be in the past'),
+  
+  // Trading pair validation
+  tradingPair: z.string()
+    .regex(/^[A-Z0-9]+\/[A-Z0-9]+$/i, 'Invalid trading pair format (e.g., BTC/USDT)')
+    .transform(val => val.toUpperCase()),
   
   // ID validations
   cuid: z.string().cuid(),
@@ -61,31 +66,23 @@ export const CommonSchemas = {
 /**
  * Trading validation schemas
  */
-export const TradingSchemas = {
+const TradingSchemas = {
   // Trading pair validation
   tradingPair: z.string()
     .regex(/^[A-Z0-9]+\/[A-Z0-9]+$/i, 'Invalid trading pair format (e.g., BTC/USDT)')
     .transform(val => val.toUpperCase()),
     
   // Timeframe validation
-  timeframe: z.enum(['1m', '5m', '15m', '30m', '1h', '4h', '1d'], {
-    errorMap: () => ({ message: 'Invalid timeframe' })
-  }),
+  timeframe: z.enum(['1m', '5m', '15m', '30m', '1h', '4h', '1d']),
   
   // Exchange validation
-  exchange: z.enum(['binance', 'coinbase', 'kraken', 'kucoin'], {
-    errorMap: () => ({ message: 'Unsupported exchange' })
-  }),
+  exchange: z.enum(['binance', 'coinbase', 'kraken', 'kucoin']),
   
   // Market type validation
-  marketType: z.enum(['spot', 'futures', 'margin'], {
-    errorMap: () => ({ message: 'Invalid market type' })
-  }),
+  marketType: z.enum(['spot', 'futures', 'margin']),
   
   // Order type validation
-  orderType: z.enum(['market', 'limit', 'stop_limit', 'stop_market'], {
-    errorMap: () => ({ message: 'Invalid order type' })
-  }),
+  orderType: z.enum(['market', 'limit', 'stop_limit', 'stop_market']),
   
   // Trade validation
   trade: z.object({
@@ -100,7 +97,7 @@ export const TradingSchemas = {
     stake_amount: CommonSchemas.positiveNumber,
     trade_duration: z.number().int().nonnegative(),
     exit_reason: CommonSchemas.nonEmptyString
-  }).ref(data => 
+  }).refine(data => 
     new Date(data.close_date) > new Date(data.open_date),
     'Close date must be after open date'
   ),
@@ -110,13 +107,13 @@ export const TradingSchemas = {
     name: CommonSchemas.nonEmptyString,
     className: CommonSchemas.nonEmptyString,
     description: z.string().optional(),
-    parameters: z.record(z.any()).optional()
+    parameters: z.record(z.string(), z.any()).optional()
   }),
   
   // Configuration validation
   config: z.object({
     name: CommonSchemas.nonEmptyString,
-    timeframe: TradingSchemas.timeframe,
+    timeframe: z.enum(['1m', '5m', '15m', '30m', '1h', '4h', '1d']),
     stakeAmount: CommonSchemas.positiveNumber,
     maxOpenTrades: z.number().int().positive().optional(),
     stopLoss: z.number().positive().optional(),
@@ -130,7 +127,7 @@ export const TradingSchemas = {
 /**
  * File path security validation
  */
-export class FilePathValidator {
+class FilePathValidator {
   private static readonly DANGEROUS_PATTERNS = [
     /\.\./, // Directory traversal
     /^\/|\\/, // Absolute paths
@@ -207,7 +204,7 @@ export class FilePathValidator {
 /**
  * Environment variable validation
  */
-export class EnvValidator {
+class EnvValidator {
   private static readonly REQUIRED_VARS = [
     'DATABASE_URL',
     'REDIS_URL',
@@ -288,7 +285,7 @@ export class EnvValidator {
 /**
  * SQL injection prevention utilities
  */
-export class SQLInjectionPrevention {
+class SQLInjectionPrevention {
   private static readonly DANGEROUS_KEYWORDS = [
     'DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER', 'CREATE',
     'UNION', 'JOIN', 'WHERE', 'SELECT', 'FROM', 'INTO',
@@ -357,7 +354,7 @@ export class SQLInjectionPrevention {
 /**
  * Cross-site scripting prevention utilities
  */
-export class XSSPrevention {
+class XSSPrevention {
   private static readonly DANGEROUS_PATTERNS = [
     /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
     /javascript:/gi,
@@ -409,7 +406,7 @@ export class XSSPrevention {
 /**
  * HTTP request validation utilities
  */
-export class RequestValidator {
+class RequestValidator {
   static validateHeaders(headers: Record<string, string>): { isValid: boolean; errors: string[] } {
     const errors: string[] = []
 
@@ -467,7 +464,7 @@ export class RequestValidator {
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        errors.push(...error.errors.map(e => `${e.path.join('.')}: ${e.message}`))
+        errors.push(...error.issues.map(e => `${e.path.join('.')}: ${e.message}`))
       } else {
         errors.push('Invalid request body')
       }
@@ -486,7 +483,7 @@ export class RequestValidator {
 /**
  * Rate limiting utilities
  */
-export class RateLimiter {
+class RateLimiter {
   private requests: Map<string, number[]> = new Map()
   private readonly windowMs: number
   private readonly maxRequests: number
@@ -548,7 +545,7 @@ export class RateLimiter {
 /**
  * Security middleware for Express/Next.js
  */
-export class SecurityMiddleware {
+class SecurityMiddleware {
   private static rateLimiter = new RateLimiter()
 
   static async validateRequest(request: {
@@ -614,7 +611,7 @@ export class SecurityMiddleware {
 /**
  * Comprehensive security validation utilities
  */
-export const SecurityUtils = {
+const SecurityUtils = {
   /**
    * Validate and sanitize all inputs
    */
@@ -629,7 +626,7 @@ export const SecurityUtils = {
       case 'url':
         return CommonSchemas.url.parse(input)
       case 'json':
-        return z.record(z.any()).parse(input)
+        return z.record(z.string(), z.any()).parse(input)
       default:
         throw new Error(`Unknown validation type: ${type}`)
     }
@@ -674,7 +671,6 @@ export const SecurityUtils = {
 // ===== Export All =====
 
 export {
-  CommonSchemas,
   TradingSchemas,
   FilePathValidator,
   EnvValidator,

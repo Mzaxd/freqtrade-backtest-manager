@@ -17,6 +17,7 @@ import {
   validateFilePath,
   sanitizeString
 } from '@/lib/validation'
+import { authenticateRequest } from '@/lib/api-auth'
 
 export const runtime = 'nodejs'
 
@@ -173,6 +174,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Authenticate request
+    const authResult = await authenticateRequest(request)
+    if (!authResult.success) {
+      return authResult.response!
+    }
+
     const { id } = await params
     const { searchParams } = new URL(request.url)
     

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createChart, IChartApi, ISeriesApi, MouseEventParams } from 'lightweight-charts'
 import { ChartTheme, getChartTheme, getChartOptions } from './themes'
-import { CandlestickData, TradeMarker } from '../CandlestickChart'
+import type { OHLCVData, TradeMarker } from '../../types/chart'
 import { TechnicalIndicator, calculateSMA, calculateEMA, calculateRSI, calculateMACD, calculateBollingerBands } from './indicators'
 import { DrawingTool, DrawingManager, drawingTools } from './drawing-tools'
 import { PerformanceMetrics, calculateCompletePerformanceMetrics } from './performance-metrics'
@@ -35,7 +35,7 @@ import {
 import { format } from 'date-fns'
 
 interface EnhancedChartContainerProps {
-  data: CandlestickData[]
+  data: OHLCVData[]
   tradeMarkers?: TradeMarker[]
   width?: number
   height?: number

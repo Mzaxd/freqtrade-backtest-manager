@@ -37,7 +37,9 @@
       "mcp__playwright__browser_wait_for",
       "Bash(pnpm db:studio:*)",
       "Bash(git add:*)",
-      "Bash(pnpm audit)"
+      "Bash(pnpm audit)",
+      "Bash(pnpm run lint:*)",
+      "Bash(curl:*)"
     ],
     "defaultMode": "acceptEdits"
   }

@@ -3,6 +3,7 @@
  * Provides hooks and utilities for optimizing React components
  */
 
+import * as React from 'react'
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 
 // ===== Performance Monitoring Hooks =====
@@ -128,7 +129,7 @@ export function useSafeAsync<T>() {
 
         return result
       } catch (error) {
-        if (error.name === 'AbortError' || !isMounted.current) {
+        if (error instanceof Error && (error.name === 'AbortError' || !isMounted.current)) {
           throw new Error('Operation aborted')
         }
 
@@ -209,7 +210,7 @@ export function useThrottle<T extends (...args: any[]) => any>(
  * Hook for requestAnimationFrame
  */
 export function useRAF() {
-  const rafRef = useRef<number>()
+  const rafRef = useRef<number | null>(null)
 
   const requestAnimationFrame = useCallback((callback: FrameRequestCallback) => {
     rafRef.current = window.requestAnimationFrame(callback)
@@ -219,7 +220,7 @@ export function useRAF() {
   const cancelAnimationFrame = useCallback(() => {
     if (rafRef.current) {
       window.cancelAnimationFrame(rafRef.current)
-      rafRef.current = undefined
+      rafRef.current = null
     }
   }, [])
 
@@ -260,7 +261,9 @@ export function useMemoized<T>(
     // Manage cache size
     if (cache.current.size >= maxSize) {
       const firstKey = cache.current.keys().next().value
-      cache.current.delete(firstKey)
+      if (firstKey) {
+        cache.current.delete(firstKey)
+      }
     }
     
     cache.current.set(key, result)
@@ -304,7 +307,7 @@ export function useResizeObserver(
   target: React.RefObject<Element>,
   callback: ResizeObserverCallback
 ) {
-  const observerRef = useRef<ResizeObserver>()
+  const observerRef = useRef<ResizeObserver | null>(null)
 
   useEffect(() => {
     if (!target.current) return
@@ -375,7 +378,7 @@ export function withMemo<P extends object>(
   const MemoizedComponent = React.memo(Component, customCompare)
 
   return function WrappedComponent(props: P) {
-    return <MemoizedComponent {...props} />
+    return React.createElement(MemoizedComponent, props)
   }
 }
 
@@ -405,12 +408,10 @@ export function withErrorBoundary<P extends object>(
         return React.createElement(fallback, { error, retry })
       }
       
-      return (
-        <div className="error-boundary-fallback">
-          <h2>Something went wrong</h2>
-          <p>{error.message}</p>
-          <button onClick={retry}>Retry</button>
-        </div>
+      return React.createElement('div', { className: 'error-boundary-fallback' },
+        React.createElement('h2', null, 'Something went wrong'),
+        React.createElement('p', null, error.message),
+        React.createElement('button', { onClick: retry }, 'Retry')
       )
     }
 

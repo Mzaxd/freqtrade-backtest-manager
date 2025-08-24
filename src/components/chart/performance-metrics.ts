@@ -1,4 +1,4 @@
-import { Trade } from '../EnhancedTradingChart'
+import type { TradeData as Trade } from '../../types/chart'
 
 export interface PerformanceMetrics {
   totalTrades: number

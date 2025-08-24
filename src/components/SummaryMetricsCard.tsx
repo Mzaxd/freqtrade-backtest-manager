@@ -18,33 +18,42 @@ const Metric: React.FC<MetricProps> = ({ label, value, unit, className }) => (
   </div>
 )
 
-interface FullBacktestResult extends BacktestTask {
-  resultsSummary: any;
-  totalTrades: number | null;
-  avgTradeDuration: number | null;
-  avgProfit: number | null;
-  totalVolume: number | null;
-  profitFactor: number | null;
-  expectancy: number | null;
-  sharpe: number | null;
-  sortino: number | null;
-  calmar: number | null;
-  cagr: number | null;
-  maxDrawdown: number | null;
-  marketChange: number | null;
+import { BacktestResultsSummary } from "@/types/chart";
+
+import { Trade } from "@prisma/client";
+
+export interface FullBacktestResult extends BacktestTask {
+  resultsSummary: BacktestResultsSummary | null;
+  trades: Trade[];
+  tradesCount: number;
+  exitReasons: string[];
+  strategy: {
+    className: string;
+    id: number;
+  };
+  config: {
+    name: string;
+  } | null;
 }
 
 interface SummaryMetricsCardProps {
-  results: BacktestTask & { resultsSummary: any };
+  results: FullBacktestResult;
 }
 
-export const SummaryMetricsCard: React.FC<SummaryMetricsCardProps> = ({ results: initialResults }) => {
-  if (!initialResults) {
-    return null
+export const SummaryMetricsCard: React.FC<SummaryMetricsCardProps> = ({ results }) => {
+  if (!results || !results.resultsSummary) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>总结性指标</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>无总结性指标数据。</p>
+        </CardContent>
+      </Card>
+    )
   }
 
-  // Use a more specific type assertion to resolve TS errors
-  const results = initialResults as FullBacktestResult;
   const { resultsSummary } = results;
 
   const formatPercent = (value: number | undefined | null) => {
@@ -74,39 +83,39 @@ export const SummaryMetricsCard: React.FC<SummaryMetricsCardProps> = ({ results:
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {/* Key Performance Indicators */}
-          <Metric label="绝对收益" value={resultsSummary?.profit_total_abs?.toFixed(3)} unit={` ${resultsSummary?.stake_currency || 'USDT'}`} />
-          <Metric label="总收益率" value={formatPercent(resultsSummary?.profit_total)} unit="%" />
-          <Metric label="最大回撤" value={formatPercent(results.maxDrawdown)} unit="%" />
-          <Metric label="CAGR" value={formatPercent(results.cagr)} unit="%" />
-          <Metric label="市场变化" value={formatPercent(results.marketChange)} unit="%" />
+          <Metric label="绝对收益" value={resultsSummary.profit_total_abs?.toFixed(3)} unit={` ${resultsSummary.stake_currency || 'USDT'}`} />
+          <Metric label="总收益率" value={formatPercent(resultsSummary.profit_total)} unit="%" />
+          <Metric label="最大回撤" value={formatPercent(resultsSummary.max_drawdown_account)} unit="%" />
+          <Metric label="CAGR" value={formatPercent(resultsSummary.cagr)} unit="%" />
+          <Metric label="市场变化" value={formatPercent(resultsSummary.market_change)} unit="%" />
 
           {/* Trade Statistics */}
-          <Metric label="总交易数" value={results.totalTrades} />
-          <Metric label="胜率" value={formatPercent(resultsSummary?.winrate)} unit="%" />
-          <Metric label="盈利因子" value={results.profitFactor?.toFixed(2)} />
-          <Metric label="期望收益" value={results.expectancy?.toFixed(3)} />
-          <Metric label="平均持仓时间" value={formatDurationFromSeconds(results.avgTradeDuration)} />
+          <Metric label="总交易数" value={resultsSummary.total_trades} />
+          <Metric label="胜率" value={formatPercent(resultsSummary.winrate)} unit="%" />
+          <Metric label="盈利因子" value={resultsSummary.profit_factor?.toFixed(2)} />
+          <Metric label="期望收益" value={resultsSummary.expectancy?.toFixed(3)} />
+          <Metric label="平均持仓时间" value={resultsSummary.holding_avg} />
 
           {/* Risk/Reward Ratios */}
-          <Metric label="Sharpe 比率" value={results.sharpe?.toFixed(2)} />
-          <Metric label="Sortino 比率" value={results.sortino?.toFixed(2)} />
-          <Metric label="Calmar 比率" value={results.calmar?.toFixed(2)} />
-          <Metric label="总交易量" value={results.totalVolume?.toFixed(2)} unit={` ${resultsSummary?.stake_currency || 'USDT'}`} />
+          <Metric label="Sharpe 比率" value={resultsSummary.sharpe?.toFixed(2)} />
+          <Metric label="Sortino 比率" value={resultsSummary.sortino?.toFixed(2)} />
+          <Metric label="Calmar 比率" value={resultsSummary.calmar?.toFixed(2)} />
+          <Metric label="总交易量" value={resultsSummary.total_volume?.toFixed(2)} unit={` ${resultsSummary.stake_currency || 'USDT'}`} />
 
           {/* Pair Performance */}
           <Metric
             label="最佳交易对"
             value={
-              resultsSummary?.best_pair?.key
-                ? `${resultsSummary.best_pair.key} (${resultsSummary.best_pair.profit_total_abs?.toFixed(2)})`
+              resultsSummary.best_pair?.pair
+                ? `${resultsSummary.best_pair.pair} (${formatPercent(resultsSummary.best_pair.profit_sum_pct)}%)`
                 : 'N/A'
             }
           />
           <Metric
             label="最差交易对"
             value={
-              resultsSummary?.worst_pair?.key
-                ? `${resultsSummary.worst_pair.key} (${resultsSummary.worst_pair.profit_total_abs?.toFixed(2)})`
+              resultsSummary.worst_pair?.pair
+                ? `${resultsSummary.worst_pair.pair} (${formatPercent(resultsSummary.worst_pair.profit_sum_pct)}%)`
                 : 'N/A'
             }
           />

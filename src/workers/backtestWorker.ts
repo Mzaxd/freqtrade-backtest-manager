@@ -25,11 +25,29 @@ const formatDuration = (duration: any): string => {
 };
 
 // Helper function to format pair metrics from array to object
-const formatPairMetrics = (pairData: any): { pair: string; profit_sum: number } | null => {
-  if (Array.isArray(pairData) && pairData.length === 2 && typeof pairData[0] === 'string' && typeof pairData[1] === 'number') {
-    return { pair: pairData[0], profit_sum: pairData[1] };
+const formatPairMetrics = (pairData: any): { pair: string; profit_sum: number; profit_sum_pct: number; } | null => {
+  if (
+    typeof pairData === 'object' &&
+    pairData !== null &&
+    'key' in pairData &&
+    typeof pairData.key === 'string' &&
+    'profit_total_abs' in pairData &&
+    typeof pairData.profit_total_abs === 'number' &&
+    'profit_total' in pairData &&
+    typeof pairData.profit_total === 'number'
+  ) {
+    return {
+      pair: pairData.key,
+      profit_sum: pairData.profit_total_abs,
+      profit_sum_pct: pairData.profit_total
+    };
   }
-  if (typeof pairData === 'object' && pairData !== null && 'pair' in pairData && 'profit_sum' in pairData) {
+  
+  // Fallback for other potential formats
+  if (Array.isArray(pairData) && pairData.length === 3 && typeof pairData[0] === 'string' && typeof pairData[1] === 'number' && typeof pairData[2] === 'number') {
+    return { pair: pairData[0], profit_sum: pairData[1], profit_sum_pct: pairData[2] };
+  }
+  if (typeof pairData === 'object' && pairData !== null && 'pair' in pairData && 'profit_sum' in pairData && 'profit_sum_pct' in pairData) {
     return pairData;
   }
   return null;
@@ -88,7 +106,44 @@ async function fileExists(filePath: string) {
   }
 }
 
-async function findLatestBacktestResult(resultsDir: string, taskId: string): Promise<string | null> {
+async function unzipBacktestResult(zipPath: string, taskId: string): Promise<{ jsonPath: string | null, plotPath: string | null }> {
+  const AdmZip = (await import('adm-zip')).default;
+  const resultsDir = path.dirname(zipPath);
+
+  try {
+    console.log(`[${taskId}] Unzipping file: ${zipPath}`);
+    const zip = new AdmZip(zipPath);
+    const zipEntries = zip.getEntries();
+    
+    const jsonEntry = zipEntries.find(entry => entry.entryName.endsWith('.json') && !entry.isDirectory);
+    const plotEntry = zipEntries.find(entry => entry.entryName.endsWith('.html') && !entry.isDirectory); // Assuming plot is .html
+
+    if (!jsonEntry) {
+      console.error(`[${taskId}] No .json file found inside ${zipPath}`);
+      return { jsonPath: null, plotPath: null };
+    }
+
+    // Extract both files
+    zip.extractEntryTo(jsonEntry.entryName, resultsDir, false, true);
+    const jsonPath = path.join(resultsDir, jsonEntry.entryName);
+    console.log(`[${taskId}] Successfully extracted ${jsonEntry.entryName} to ${jsonPath}`);
+    
+    let plotPath: string | null = null;
+    if (plotEntry) {
+      zip.extractEntryTo(plotEntry.entryName, resultsDir, false, true);
+      plotPath = path.join(resultsDir, plotEntry.entryName);
+      console.log(`[${taskId}] Successfully extracted ${plotEntry.entryName} to ${plotPath}`);
+    }
+
+    return { jsonPath, plotPath };
+
+  } catch (error) {
+    console.error(`[${taskId}] Failed to unzip file ${zipPath}:`, error);
+    return { jsonPath: null, plotPath: null };
+  }
+}
+
+async function findLatestBacktestResult(resultsDir: string, taskId: string): Promise<{ zipPath: string | null, metaPath: string | null }> {
   const fs = await import('fs').then(m => m.promises);
   const maxRetries = 5;
   const retryDelay = 2000; // 2 seconds
@@ -96,21 +151,24 @@ async function findLatestBacktestResult(resultsDir: string, taskId: string): Pro
   for (let i = 0; i < maxRetries; i++) {
     try {
       const files = await fs.readdir(resultsDir);
-      // New freqtrade versions store everything in a single JSON file.
-      // We look for a file that is NOT a .meta.json but matches the task ID.
       const taskFilePrefix = `backtest-result-cli-${taskId}`;
-      const matchingFiles = files.filter(file =>
-        file.startsWith(taskFilePrefix) &&
-        file.endsWith('.json') &&
-        !file.endsWith('.meta.json')
-      );
-
+      
+      // Look for .zip and .meta.json files
+      const matchingFiles = files.filter(file => file.startsWith(taskFilePrefix));
+      
       if (matchingFiles.length > 0) {
-        // Sort to get the most recent one if multiple exist (unlikely)
         matchingFiles.sort().reverse();
-        const filePath = path.join(resultsDir, matchingFiles[0]);
-        console.log(`Found primary result file: ${filePath}`);
-        return filePath;
+        
+        const metaFile = matchingFiles.find(file => file.endsWith('.meta.json'));
+        const zipFile = matchingFiles.find(file => file.endsWith('.zip'));
+        
+        const zipPath = zipFile ? path.join(resultsDir, zipFile) : null;
+        const metaPath = metaFile ? path.join(resultsDir, metaFile) : null;
+        
+        if (zipPath) {
+          console.log(`Found result files - Zip: ${zipPath}, Meta: ${metaPath}`);
+          return { zipPath, metaPath };
+        }
       }
     } catch (error: any) {
       if (error.code !== 'ENOENT') {
@@ -119,14 +177,14 @@ async function findLatestBacktestResult(resultsDir: string, taskId: string): Pro
     }
     
     if (i < maxRetries - 1) {
-      console.log(`Result file for task ${taskId} not found. Retrying in ${retryDelay}ms... (Attempt ${i + 1}/${maxRetries})`);
+      console.log(`Result files for task ${taskId} not found. Retrying in ${retryDelay}ms... (Attempt ${i + 1}/${maxRetries})`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
   }
 
-  console.warn(`No primary result file found for task ${taskId} in ${resultsDir} after ${maxRetries} retries.`);
-  console.warn(`Expected a file starting with: backtest-result-cli-${taskId}*.json`);
-  return null;
+  console.warn(`No result .zip file found for task ${taskId} in ${resultsDir} after ${maxRetries} retries.`);
+  console.warn(`Expected a file starting with: backtest-result-cli-${taskId}*.zip`);
+  return { zipPath: null, metaPath: null };
 }
 
 interface BacktestResult {
@@ -267,73 +325,47 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
     }
 
     const backtestResultsDir = path.join(userDataPath, 'backtest_results');
-    const resultPath = await findLatestBacktestResult(backtestResultsDir, taskId);
+    const { zipPath, metaPath } = await findLatestBacktestResult(backtestResultsDir, taskId);
+    let resultPath: string | null = null;
+    let plotProfitUrl: string | null = null;
+
+    if (zipPath) {
+      const { jsonPath, plotPath } = await unzipBacktestResult(zipPath, taskId);
+      resultPath = jsonPath;
+      plotProfitUrl = plotPath; // This will be the local file path
+    }
+    
     let resultsSummary: BacktestResultsSummary | null = null;
-    let plotProfitUrl = null;
     let isSuccess = false;
 
     // Check for explicit errors in logs (excluding warnings and non-critical errors)
     const hasErrorInLog = fullLogs.includes('freqtrade - ERROR')
     
-    // Add debug logging for result path
-    console.log(`[${taskId}] Result path: ${resultPath}`)
-    console.log(`[${taskId}] Backtest results directory: ${backtestResultsDir}`)
-    console.log(`[${taskId}] Expected filename: backtest-result-cli-${taskId}.meta.json`)
-    
     // Log the status decision criteria
     console.log(`[${taskId}] Status Decision Criteria:`)
-    console.log(`[${taskId}] - isSuccess: ${isSuccess}`)
     console.log(`[${taskId}] - hasErrorInLog: ${hasErrorInLog}`)
     console.log(`[${taskId}] - exitCode: ${exitCode}`)
     console.log(`[${taskId}] - resultPath exists: ${!!resultPath}`)
-    console.log(`[${taskId}] - Contains 'freqtrade - ERROR': ${fullLogs.includes('freqtrade - ERROR')}`)
-    console.log(`[${taskId}] - Contains 'pkg_resources is deprecated': ${fullLogs.includes('pkg_resources is deprecated')}`)
-    console.log(`[${taskId}] - Contains 'UserWarning': ${fullLogs.includes('UserWarning')}`)
     
-    // Add to Redis logs for user visibility
-    redis.publish(`logs:${taskId}`, `\n=== STATUS DECISION DEBUG ===\n`)
-    redis.publish(`logs:${taskId}`, `isSuccess: ${isSuccess}\n`)
-    redis.publish(`logs:${taskId}`, `hasErrorInLog: ${hasErrorInLog}\n`)
-    redis.publish(`logs:${taskId}`, `exitCode: ${exitCode}\n`)
-    redis.publish(`logs:${taskId}`, `resultPath exists: ${!!resultPath}\n`)
-    redis.publish(`logs:${taskId}`, `Contains 'freqtrade - ERROR': ${fullLogs.includes('freqtrade - ERROR')}\n`)
-    redis.publish(`logs:${taskId}`, `Contains 'pkg_resources is deprecated': ${fullLogs.includes('pkg_resources is deprecated')}\n`)
-    redis.publish(`logs:${taskId}`, `Contains 'UserWarning': ${fullLogs.includes('UserWarning')}\n`)
-    redis.publish(`logs:${taskId}`, `===============================\n\n`)
-
     if (resultPath) {
       try {
-        logs.push(`\nFound result file: ${resultPath}`);
-        redis.publish(`logs:${taskId}`, `\nFound result file: ${resultPath}\n`);
-        console.log(`[${taskId}] Found result file: ${resultPath}`);
+        logs.push(`\nFound and extracted result file: ${resultPath}`);
+        redis.publish(`logs:${taskId}`, `\nFound and extracted result file: ${resultPath}\n`);
+        console.log(`[${taskId}] Processing result file: ${resultPath}`);
 
         const fs = await import('fs').then(m => m.promises);
         const resultData = await fs.readFile(resultPath, 'utf8');
 
-        // An empty file can be created on error, so check for content.
         if (resultData.trim() === '') {
-          throw new Error("Main result file is empty.");
+          throw new Error("Result file is empty after extraction.");
         }
 
-        // 增加日志记录原始文件内容
-        logs.push(`\n--- Raw Result File Content (from ${resultPath}) ---\n`);
-        logs.push(resultData);
-        logs.push(`\n--- End of Raw Result File Content ---\n`);
-        redis.publish(`logs:${taskId}`, `\n--- Raw Result File Content (from ${resultPath}) ---\n`);
-        redis.publish(`logs:${taskId}`, resultData + '\n');
-        redis.publish(`logs:${taskId}`, `\n--- End of Raw Result File Content ---\n`);
-        console.log(`[${taskId}] Raw result data from ${resultPath}:\n${resultData}`);
-
-        let result: BacktestResult;
-        try {
-          result = JSON.parse(resultData) as BacktestResult;
-        } catch (parseError) {
-          console.error(`Failed to parse JSON from result file: ${parseError}`);
-          console.error(`File content preview: ${resultData.substring(0, 500)}...`);
-          throw new Error(`Invalid JSON in result file: ${(parseError as Error).message}`);
+        const result = JSON.parse(resultData) as BacktestResult;
+        
+        if (!result.strategy) {
+          throw new Error("No strategy data found in result object.");
         }
-
-        // The strategy name is the first key in the result.strategy object.
+        
         const strategyName = Object.keys(result.strategy)[0];
         if (!strategyName) {
           throw new Error("Strategy name not found in result object.");
@@ -341,21 +373,43 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
         const strategyResult = result.strategy[strategyName];
 
         // The new format contains all necessary info in one file.
-        resultsSummary = strategyResult as BacktestResultsSummary;
+        resultsSummary = { ...strategyResult } as BacktestResultsSummary;
         console.log(`[${taskId}] Using summary statistics from the main result file.`);
 
         // 数据格式化
         if (resultsSummary) {
-          // @ts-ignore
-          resultsSummary.avg_duration = formatDuration(resultsSummary.holding_avg);
-          // @ts-ignore
-          resultsSummary.best_pair = formatPairMetrics(resultsSummary.best_pair);
-          // @ts-ignore
-          resultsSummary.worst_pair = formatPairMetrics(resultsSummary.worst_pair);
+          resultsSummary.avg_duration = formatDuration(strategyResult.holding_avg);
+          resultsSummary.best_pair = formatPairMetrics(strategyResult.best_pair) as any;
+          resultsSummary.worst_pair = formatPairMetrics(strategyResult.worst_pair) as any;
+          resultsSummary.winrate = strategyResult.wins > 0 ? strategyResult.wins / strategyResult.total_trades : 0;
         }
 
         isSuccess = true; // Mark as success only if parsing is successful
         console.log(`[${taskId}] Successfully parsed result file for strategy: ${strategyName}`);
+
+        // Save trades to database
+        if (strategyResult.trades && strategyResult.trades.length > 0) {
+          const tradesToCreate = strategyResult.trades.map(trade => ({
+            pair: trade.pair,
+            open_date: new Date(trade.open_timestamp),
+            close_date: new Date(trade.close_timestamp),
+            profit_abs: trade.profit_abs,
+            profit_pct: trade.profit_ratio ?? trade.profit_pct ?? 0,
+            open_rate: trade.open_rate,
+            close_rate: trade.close_rate,
+            amount: trade.amount,
+            stake_amount: trade.stake_amount,
+            trade_duration: trade.trade_duration,
+            exit_reason: trade.exit_reason,
+            backtestTaskId: taskId,
+          }));
+
+          await prisma.trade.createMany({
+            data: tradesToCreate,
+            skipDuplicates: true, // In case the worker runs again
+          });
+          console.log(`[${taskId}] Successfully saved ${tradesToCreate.length} trades to the database.`);
+        }
 
       } catch (error) {
         console.error('Failed to read or process result file:', error);
@@ -405,23 +459,23 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
           status: 'COMPLETED',
           completedAt: new Date(),
           resultsSummary: resultsSummary ?? Prisma.JsonNull,
-          rawOutputPath: resultPath,
-          plotProfitUrl: null, // This can be populated later
+          rawOutputPath: resultPath || metaPath, // Use resultPath if available, otherwise use metaPath
+          plotProfitUrl: plotProfitUrl,
           candleDataFile: candleDataFile,
           logs: logs.join('\n'),
-          // Populate new metrics
-          totalTrades: resultsSummary?.total_trades,
-          avgTradeDuration: resultsSummary?.holding_avg_s,
-          avgProfit: resultsSummary?.profit_mean,
-          totalVolume: resultsSummary?.total_volume,
-          profitFactor: resultsSummary?.profit_factor,
-          expectancy: resultsSummary?.expectancy,
-          sharpe: resultsSummary?.sharpe,
-          sortino: resultsSummary?.sortino,
-          calmar: resultsSummary?.calmar,
-          cagr: resultsSummary?.cagr,
-          maxDrawdown: resultsSummary?.max_drawdown_account,
-          marketChange: resultsSummary?.market_change,
+          // Populate new metrics from resultsSummary
+          totalTrades: resultsSummary?.total_trades ?? null,
+          avgTradeDuration: resultsSummary?.holding_avg_s ?? null,
+          avgProfit: resultsSummary?.profit_mean ?? null,
+          totalVolume: resultsSummary?.total_volume ?? null,
+          profitFactor: resultsSummary?.profit_factor ?? null,
+          expectancy: resultsSummary?.expectancy ?? null,
+          sharpe: resultsSummary?.sharpe ?? null,
+          sortino: resultsSummary?.sortino ?? null,
+          calmar: resultsSummary?.calmar ?? null,
+          cagr: resultsSummary?.cagr ?? null,
+          maxDrawdown: resultsSummary?.max_drawdown_account ?? null,
+          marketChange: resultsSummary?.market_change ?? null,
         },
       });
     } else {
@@ -438,7 +492,7 @@ export async function processBacktest(taskId: string, overrideParams?: OverrideP
           status: 'FAILED',
           completedAt: new Date(),
           logs: fullLogs,
-          rawOutputPath: resultPath, // Still save the path for debugging
+          rawOutputPath: resultPath || metaPath, // Still save the path for debugging
           candleDataFile: candleDataFile,
         },
       });

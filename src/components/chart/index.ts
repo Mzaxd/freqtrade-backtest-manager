@@ -137,9 +137,9 @@ export {
 
 // Types
 export type { 
-  CandlestickData,
+  OHLCVData as CandlestickData,
   TradeMarker 
-} from '../CandlestickChart'
+} from '../../types/chart'
 
 // Import types from lightweight-charts package directly
 import type {

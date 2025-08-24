@@ -3,7 +3,7 @@
  * These interfaces provide type safety for all chart-related data structures
  */
 
-import type { Time } from 'lightweight-charts'
+import type { Time, SeriesMarkerPosition as LWCSeriesMarkerPosition, SeriesMarkerShape as LWCSeriesMarkerShape } from 'lightweight-charts'
 
 // ===== OHLCV Data Types =====
 
@@ -46,12 +46,15 @@ export interface TradeData {
   close_date: string
   profit_abs: number
   profit_pct: number
+  profit_ratio?: number // Added for compatibility with raw results
   open_rate: number
   close_rate: number
   amount: number
   stake_amount: number
   trade_duration: number
   exit_reason: string
+  open_timestamp: number // Added from raw results
+  close_timestamp: number // Added from raw results
   /** Trade ID for database reference */
   id?: string
   /** Strategy used for this trade */
@@ -65,8 +68,8 @@ export interface TradeData {
 /**
  * Trade marker data for chart display
  */
-export type SeriesMarkerPosition = 'aboveBar' | 'belowBar' | 'inBar';
-export type SeriesMarkerShape = 'circle' | 'square' | 'arrowUp' | 'arrowDown';
+export type SeriesMarkerPosition = LWCSeriesMarkerPosition;
+export type SeriesMarkerShape = LWCSeriesMarkerShape;
 export interface TradeMarker {
   time: Time
   position: SeriesMarkerPosition
@@ -339,8 +342,8 @@ export interface BacktestResultsSummary {
   profit_total_abs: number
   stake_currency: string
   avg_duration: string
-  best_pair: string
-  worst_pair: string
+  best_pair: { pair: string; profit_sum: number; profit_sum_pct: number; } | null
+  worst_pair: { pair: string; profit_sum: number; profit_sum_pct: number; } | null
   max_drawdown?: number
   win_rate?: number
   profit_factor?: number

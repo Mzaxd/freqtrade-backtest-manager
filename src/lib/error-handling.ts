@@ -416,7 +416,7 @@ export const RecoveryStrategies = {
   /**
    * Fallback to alternative data source
    */
-  fallback: async <T>(
+  fallback: async function <T>(
     primaryFn: () => Promise<T>,
     fallbackFn: () => Promise<T>,
     errorTypes: string[] = ['NETWORK_ERROR', 'EXTERNAL_SERVICE_ERROR']
@@ -439,7 +439,7 @@ export const RecoveryStrategies = {
   /**
    * Graceful degradation
    */
-  degrade: async <T>(
+  degrade: async function <T>(
     fn: () => Promise<T>,
     fallbackValue: T,
     errorTypes: string[] = ['EXTERNAL_SERVICE_ERROR', 'NETWORK_ERROR']
@@ -493,10 +493,17 @@ export class MemoryErrorMonitor implements ErrorMonitor {
   }
 
   report(error: AppError, severity: ErrorSeverity = ErrorSeverity.MEDIUM): void {
-    const errorWithSeverity = {
-      ...error,
-      severity
-    }
+    const errorWithSeverity = new AppError(
+      error.type,
+      error.message,
+      error.code,
+      error.statusCode,
+      error.context,
+      error.recoverable
+    )
+    
+    // Add severity as a custom property
+    ;(errorWithSeverity as any).severity = severity
 
     this.errors.push(errorWithSeverity)
 
@@ -523,7 +530,7 @@ export class MemoryErrorMonitor implements ErrorMonitor {
   }
 
   getErrorsBySeverity(severity: ErrorSeverity): AppError[] {
-    return this.errors.filter(error => error.severity === severity)
+    return this.errors.filter(error => (error as any).severity === severity)
   }
 }
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { TradeMarker } from '@/types/chart'
+import { TradeMarker, SeriesMarkerPosition, SeriesMarkerShape } from '@/types/chart'
 import { Time } from 'lightweight-charts'
 import { EnhancedChartContainer } from './chart/EnhancedChartContainer'
 import { ChartTheme, getChartTheme } from './chart/themes'
@@ -35,6 +35,7 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
   const [availablePairs, setAvailablePairs] = useState<string[]>([])
   const [selectedPair, setSelectedPair] = useState<string>('')
   const [backtestMeta, setBacktestMeta] = useState<BacktestMeta | null>(null)
+  const [pairsError, setPairsError] = useState<string | null>(null)
   const [currentTheme, setCurrentTheme] = useState<ChartTheme>(getChartTheme('light'))
   const [showAdvancedControls, setShowAdvancedControls] = useState(false)
  
@@ -49,16 +50,16 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
       return [
         {
           time: openTime,
-          position: 'belowBar',
-          shape: 'arrowUp',
+          position: 'belowBar' as SeriesMarkerPosition,
+          shape: 'arrowUp' as SeriesMarkerShape,
           color: isProfitable ? '#26a69a' : '#ef5350',
           text: '开',
           tradeData: { ...trade, type: 'open' as 'open' }
         },
         {
           time: closeTime,
-          position: 'aboveBar',
-          shape: 'arrowDown',
+          position: 'aboveBar' as SeriesMarkerPosition,
+          shape: 'arrowDown' as SeriesMarkerShape,
           color: isProfitable ? '#26a69a' : '#ef5350',
           text: '平',
           tradeData: { ...trade, type: 'close' as 'close' }
@@ -110,20 +111,25 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
     
     setLoading(true);
     try {
-        // First, get backtest metadata to populate pair list
+        // First, get available pairs using the new API
         if (availablePairs.length === 0) {
-            const metaResponse = await fetch(`/api/backtests/${backtestId}`);
-            if (metaResponse.ok) {
-                const backtest = await metaResponse.json();
-                setBacktestMeta(backtest);
-                const pairs = [...new Set(backtest.trades?.map((trade: TradeData) => trade.pair) || [])] as string[];
-                setAvailablePairs(pairs);
-                // If a pair is not selected yet, or the selected one is not in the new list, default to the first one
-                if (pairs.length > 0 && !pairs.includes(selectedPair)) {
-                    setSelectedPair(pairs[0]);
+            const pairsResponse = await fetch(`/api/backtests/${backtestId}/available-pairs`);
+            if (pairsResponse.ok) {
+                const pairsData = await pairsResponse.json();
+                if (pairsData.success && pairsData.data) {
+                    const pairs = pairsData.data.pairs;
+                    setAvailablePairs(pairs);
+                    setPairsError(null);
+                    // If a pair is not selected yet, or the selected one is not in the new list, default to the first one
+                    if (pairs.length > 0 && !pairs.includes(selectedPair)) {
+                        setSelectedPair(pairs[0]);
+                    }
+                } else {
+                    setPairsError(pairsData.error || 'Failed to fetch available pairs');
+                    return;
                 }
             } else {
-                 console.error('Failed to fetch backtest metadata');
+                 setPairsError('Failed to fetch available pairs');
                  return;
             }
         }
@@ -174,21 +180,27 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
       
       setLoading(true);
       try {
-        // 首先获取回测元数据以填充交易对列表
-        const metaResponse = await fetch(`/api/backtests/${backtestId}`, {
+        // 首先获取可用交易对列表
+        const pairsResponse = await fetch(`/api/backtests/${backtestId}/available-pairs`, {
           signal: abortController.signal
         });
         
-        if (metaResponse.ok && isMounted) {
-          const backtest = await metaResponse.json();
-          setBacktestMeta(backtest);
-          const pairs = [...new Set(backtest.trades?.map((trade: TradeData) => trade.pair) || [])] as string[];
-          setAvailablePairs(pairs);
-          
-          // 如果没有选中的交易对或者选中的不在新列表中，默认选择第一个
-          if (pairs.length > 0 && !pairs.includes(selectedPair)) {
-            setSelectedPair(pairs[0]);
+        if (pairsResponse.ok && isMounted) {
+          const pairsData = await pairsResponse.json();
+          if (pairsData.success && pairsData.data) {
+            const pairs = pairsData.data.pairs;
+            setAvailablePairs(pairs);
+            setPairsError(null);
+            
+            // 如果没有选中的交易对或者选中的不在新列表中，默认选择第一个
+            if (pairs.length > 0 && !pairs.includes(selectedPair)) {
+              setSelectedPair(pairs[0]);
+            }
+          } else {
+            setPairsError(pairsData.error || 'Failed to fetch available pairs');
           }
+        } else {
+          setPairsError('Failed to fetch available pairs');
         }
         
         // 如果有选中的交易对，立即获取其图表数据
@@ -338,19 +350,53 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
       {/* 主图表区域 */}
       <Card>
         <CardContent className="p-0">
-          <div className="trading-view-widget">
-            <EnhancedChartContainer
-              data={chartData.candles}
-              tradeMarkers={tradeMarkers}
-              height={600}
-              onCrosshairMove={handleCrosshairMove}
-              onTradeClick={handleTradeClick}
-              showVolume={showVolume}
-              showGrid={showGrid}
-              theme={currentTheme}
-              performanceMode={true}
-            />
-          </div>
+          {pairsError ? (
+            <div className="flex items-center justify-center h-96 bg-red-50 border border-red-200 rounded-lg">
+              <div className="text-center">
+                <div className="text-red-500 text-lg font-medium mb-2">数据加载失败</div>
+                <div className="text-red-400 text-sm">{pairsError}</div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRefresh}
+                  className="mt-4"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  重试
+                </Button>
+              </div>
+            </div>
+          ) : availablePairs.length === 0 ? (
+            <div className="flex items-center justify-center h-96 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="text-center">
+                <div className="text-gray-500 text-lg font-medium mb-2">暂无可用数据</div>
+                <div className="text-gray-400 text-sm">当前回测任务没有可用的交易对数据</div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRefresh}
+                  className="mt-4"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  刷新
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="trading-view-widget">
+              <EnhancedChartContainer
+                data={chartData.candles}
+                tradeMarkers={tradeMarkers}
+                height={600}
+                onCrosshairMove={handleCrosshairMove}
+                onTradeClick={handleTradeClick}
+                showVolume={showVolume}
+                showGrid={showGrid}
+                theme={currentTheme}
+                performanceMode={true}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

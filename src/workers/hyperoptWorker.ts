@@ -79,7 +79,7 @@ export async function processHyperopt(taskId: string) {
       '--strategy', task.strategy.className,
       '--strategy-path', path.posix.join(containerUserDataPath, 'strategies'),
       '--epochs', task.epochs.toString(),
-      '--spaces', task.spaces,
+      '--spaces', ...task.spaces,
       '--hyperopt-loss', task.lossFunction,
       '--print-all',
     ]

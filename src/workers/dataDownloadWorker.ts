@@ -28,7 +28,7 @@ export async function processDataDownload(jobId: string) {
   try {
     await prisma.dataDownloadJob.update({
       where: { id: jobId },
-      data: { status: Prisma.DataDownloadStatus.RUNNING },
+      data: { status: 'RUNNING' },
     });
 
     const job = await prisma.dataDownloadJob.findUnique({
@@ -106,7 +106,7 @@ export async function processDataDownload(jobId: string) {
       await prisma.dataDownloadJob.update({
         where: { id: jobId },
         data: {
-          status: Prisma.DataDownloadStatus.COMPLETED,
+          status: 'COMPLETED',
           logs: fullLogs,
         },
       });
@@ -157,7 +157,7 @@ export async function processDataDownload(jobId: string) {
       await prisma.dataDownloadJob.update({
         where: { id: jobId },
         data: {
-          status: Prisma.DataDownloadStatus.FAILED,
+          status: 'FAILED',
           logs: fullLogs,
         },
       });
@@ -167,7 +167,7 @@ export async function processDataDownload(jobId: string) {
     await prisma.dataDownloadJob.update({
       where: { id: jobId },
       data: {
-        status: Prisma.DataDownloadStatus.FAILED,
+        status: 'FAILED',
         logs: error instanceof Error ? error.message : String(error), // Convert non-Error objects to string
       },
     });

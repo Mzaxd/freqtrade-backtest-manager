@@ -20,31 +20,10 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { TradesTable } from "@/components/TradesTable";
 import { EnhancedTradingChart } from "@/components/EnhancedTradingChart";
+import { FullBacktestResult } from "@/components/SummaryMetricsCard";
+import { TradeData } from '@/types/chart';
 
-interface BacktestTask {
-  id: string
-  name: string
-  status: string
-  timerangeStart: string
-  timerangeEnd: string
-  createdAt: string
-  completedAt: string | null
-  summary: any
-  plotProfitUrl?: string | null
-  logs: string
-  strategy: {
-    className: string
-    id: string
-  }
-  config: {
-    name: string
-  }
-  trades: any[];
-  tradesCount: number;
-  exitReasons: string[];
-}
-
-async function getBacktest(id: string, page: number, limit: number, sortBy: string, sortOrder: string, filters: Record<string, any>) {
+async function getBacktest(id: string, page: number, limit: number, sortBy: string, sortOrder: string, filters: Record<string, any>): Promise<FullBacktestResult> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
@@ -52,11 +31,26 @@ async function getBacktest(id: string, page: number, limit: number, sortBy: stri
     sortOrder,
     ...filters,
   });
-  const response = await fetch(`/api/backtests/${id}?${params.toString()}`)
+  const response = await fetch(`/api/backtests/${id}?${params.toString()}`, { cache: 'no-store' })
   if (!response.ok) {
     throw new Error('Failed to fetch backtest')
   }
-  return response.json()
+  const data = await response.json();
+  // Dates are serialized as strings, so we need to convert them back
+  return {
+    ...data,
+    createdAt: new Date(data.createdAt),
+    completedAt: data.completedAt ? new Date(data.completedAt) : null,
+    timerangeStart: data.timerangeStart ? new Date(data.timerangeStart) : null,
+    timerangeEnd: data.timerangeEnd ? new Date(data.timerangeEnd) : null,
+    trades: data.trades.map((t: any) => ({
+      ...t,
+      open_date: new Date(t.open_date),
+      close_date: new Date(t.close_date),
+      open_timestamp: new Date(t.open_date).getTime(),
+      close_timestamp: new Date(t.close_date).getTime(),
+    }))
+  };
 }
 
 export default function BacktestDetailPage() {
@@ -74,11 +68,11 @@ export default function BacktestDetailPage() {
   const [clearLogCache, setClearLogCache] = useState(false);
   const [showEnhancedChart, setShowEnhancedChart] = useState(false);
 
-  const { data: backtest, isLoading, error } = useQuery({
+  const { data: backtest, isLoading, error } = useQuery<FullBacktestResult, Error>({
     queryKey: ['backtest', id, page, limit, sortBy, sortOrder, filters],
     queryFn: () => getBacktest(id, page, limit, sortBy, sortOrder, filters),
-    refetchInterval: (query: Query) => {
-      const data = query.state.data as BacktestTask | undefined
+    refetchInterval: (query) => {
+      const data = query.state.data
       if (data?.status === 'RUNNING' || data?.status === 'PENDING') {
         return 5000 // 5 seconds
       }
@@ -145,16 +139,15 @@ export default function BacktestDetailPage() {
     )
   }
 
-  const typedBacktest = backtest as BacktestTask
-  const showLogs = ['RUNNING', 'PENDING'].includes(typedBacktest.status) || !!typedBacktest.logs
+  const showLogs = ['RUNNING', 'PENDING'].includes(backtest.status) || !!backtest.logs
 
   return (
     <div className="container mx-auto p-6 relative">
-      {typedBacktest.strategy.id && (
+      {backtest.strategy.id && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link href={`/strategies/${typedBacktest.strategy.id}`} className="absolute top-4 right-4">
+              <Link href={`/strategies/${backtest.strategy.id}`} className="absolute top-4 right-4">
                 <Button size="icon" variant="outline">
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
@@ -167,7 +160,7 @@ export default function BacktestDetailPage() {
         </TooltipProvider>
       )}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">{typedBacktest.name}</h1>
+        <h1 className="text-3xl font-bold mb-2">{backtest.name}</h1>
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
             {
@@ -176,11 +169,11 @@ export default function BacktestDetailPage() {
                 FAILED: <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-red-100 text-red-800"><XCircle className="h-4 w-4 mr-1" />FAILED</span>,
                 RUNNING: <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800"><Loader2 className="h-4 w-4 mr-1 animate-spin" />RUNNING</span>,
                 PENDING: <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800"><Hourglass className="h-4 w-4 mr-1" />PENDING</span>
-              }[typedBacktest.status] || <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800">{typedBacktest.status}</span>
+              }[backtest.status] || <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800">{backtest.status}</span>
             }
           </div>
           <span className="text-sm text-gray-600">
-            {t('createdAt')}: {format(new Date(typedBacktest.createdAt), 'PPpp')}
+            {t('createdAt')}: {format(backtest.createdAt, 'PPpp')}
           </span>
           <Button onClick={handleRetry} disabled={retryMutation.isPending} size="sm" variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -208,39 +201,37 @@ export default function BacktestDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">{t('basicInfo.strategy')}</p>
-                    <p className="font-medium">{typedBacktest.strategy.className}</p>
+                    <p className="font-medium">{backtest.strategy.className}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">{t('basicInfo.config')}</p>
-                    <p className="font-medium">{typedBacktest.config.name}</p>
+                    <p className="font-medium">{backtest.config?.name || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">{t('basicInfo.startTime')}</p>
-                    <p className="font-medium">{format(new Date(typedBacktest.timerangeStart), 'PP')}</p>
+                    <p className="font-medium">{backtest.timerangeStart ? format(backtest.timerangeStart, 'PP') : 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">{t('basicInfo.endTime')}</p>
-                    <p className="font-medium">{format(new Date(typedBacktest.timerangeEnd), 'PP')}</p>
+                    <p className="font-medium">{backtest.timerangeEnd ? format(backtest.timerangeEnd, 'PP') : 'N/A'}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {typedBacktest.summary && (
-              <SummaryMetricsCard results={typedBacktest.summary} />
-            )}
+            {backtest.resultsSummary ? <SummaryMetricsCard results={backtest} /> : <p>无总结性指标数据。</p>}
           </div>
         </TabsContent>
 
         <TabsContent value="analysis" className="mt-4">
-          {typedBacktest.plotProfitUrl ? (
+          {backtest.plotProfitUrl ? (
             <Card>
               <CardHeader>
                 <CardTitle>{t('analysis.profitPlotTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <iframe
-                  src={typedBacktest.plotProfitUrl}
+                  src={backtest.plotProfitUrl}
                   className="w-full h-[800px] border-0"
                   title={t('analysis.profitPlotTitle')}
                 />
@@ -252,7 +243,7 @@ export default function BacktestDetailPage() {
                 <CardTitle>{t('analysis.title')}</CardTitle>
               </CardHeader>
               <CardContent>
-                {typedBacktest.status === 'COMPLETED' ? (
+                {backtest.status === 'COMPLETED' ? (
                   <div>
                     <p className="mb-4">{t('analysis.noChart')}</p>
                     <Button onClick={handleGeneratePlot} disabled={isPlotting || plotMutation.isPending}>
@@ -274,11 +265,11 @@ export default function BacktestDetailPage() {
         </TabsContent>
 
         <TabsContent value="chart" className="mt-4">
-          <EnhancedTradingChart 
+          <EnhancedTradingChart
             backtestId={id}
             initialData={backtest ? {
               candles: [], // 将在组件内部加载
-              trades: (backtest as any).trades || []
+              trades: backtest.trades.map(t => ({...t, open_date: t.open_date.toISOString(), close_date: t.close_date.toISOString(), open_timestamp: t.open_date.getTime(), close_timestamp: t.close_date.getTime()})) as TradeData[] || []
             } : undefined}
             className="w-full"
           />
@@ -286,8 +277,8 @@ export default function BacktestDetailPage() {
 
         <TabsContent value="trades" className="mt-4">
           <TradesTable
-            trades={typedBacktest.trades || []}
-            tradesCount={typedBacktest.tradesCount || 0}
+            trades={backtest.trades.map(t => ({...t, open_date: t.open_date.toISOString(), close_date: t.close_date.toISOString()}))}
+            tradesCount={backtest.tradesCount || 0}
             page={page}
             limit={limit}
             onPageChange={setPage}
@@ -297,7 +288,7 @@ export default function BacktestDetailPage() {
               setSortOrder(newSortOrder);
             }}
             onFilterChange={setFilters}
-            exitReasons={typedBacktest.exitReasons || []}
+            exitReasons={backtest.exitReasons || []}
           />
         </TabsContent>
 
@@ -310,7 +301,7 @@ export default function BacktestDetailPage() {
               <CardContent className="h-[75vh] overflow-y-auto">
                 <RealtimeLogViewer
                   logSourceUrl={`/api/backtests/${id}/logs/stream`}
-                  initialLogs={typedBacktest.logs}
+                  initialLogs={backtest.logs || ''}
                   clearCache={clearLogCache}
                 />
               </CardContent>
