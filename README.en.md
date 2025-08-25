@@ -7,9 +7,9 @@
 
 [//]: # (Badges)
 <p align="center">
-  <img src="https://img.shields.io/github/license/your-username/freqtrade-backtest-manager" alt="License">
-  <img src="https://img.shields.io/github/stars/your-username/freqtrade-backtest-manager" alt="Stars">
-  <img src="https://img.shields.io/github/forks/your-username/freqtrade-backtest-manager" alt="Forks">
+  <img src="https://img.shields.io/github/license/freqtrade-backtest-manager/freqtrade-backtest-manager" alt="License">
+  <img src="https://img.shields.io/github/stars/freqtrade-backtest-manager/freqtrade-backtest-manager" alt="Stars">
+  <img src="https://img.shields.io/github/forks/freqtrade-backtest-manager/freqtrade-backtest-manager" alt="Forks">
 </p>
 
 ## Introduction
