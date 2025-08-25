@@ -43,7 +43,7 @@ async function getBacktest(id: string, page: number, limit: number, sortBy: stri
     completedAt: data.completedAt ? new Date(data.completedAt) : null,
     timerangeStart: data.timerangeStart ? new Date(data.timerangeStart) : null,
     timerangeEnd: data.timerangeEnd ? new Date(data.timerangeEnd) : null,
-    trades: data.trades.map((t: any) => ({
+    trades: (data.trades || []).map((t: any) => ({
       ...t,
       open_date: new Date(t.open_date),
       close_date: new Date(t.close_date),
@@ -269,7 +269,7 @@ export default function BacktestDetailPage() {
             backtestId={id}
             initialData={backtest ? {
               candles: [], // 将在组件内部加载
-              trades: backtest.trades.map(t => ({...t, open_date: t.open_date.toISOString(), close_date: t.close_date.toISOString(), open_timestamp: t.open_date.getTime(), close_timestamp: t.close_date.getTime()})) as TradeData[] || []
+              trades: (backtest.trades || []).map(t => ({...t, open_date: t.open_date.toISOString(), close_date: t.close_date.toISOString(), open_timestamp: t.open_date.getTime(), close_timestamp: t.close_date.getTime()})) as TradeData[]
             } : undefined}
             className="w-full"
           />

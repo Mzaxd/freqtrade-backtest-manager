@@ -41,7 +41,7 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
  
    // 转换交易数据为标记
   const convertTradesToMarkers = (trades: TradeData[]): TradeMarker[] => {
-    const markers = trades.map((trade) => {
+    const markers = (trades || []).map((trade) => {
       const openTime = Math.floor(new Date(trade.open_date).getTime() / 1000) as Time
       const closeTime = Math.floor(new Date(trade.close_date).getTime() / 1000) as Time
       
@@ -139,7 +139,9 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
             const response = await fetch(`/api/backtests/${backtestId}/chart-data?timeframe=${timeframe}&pair=${selectedPair}`);
             if (response.ok) {
                 const data = await response.json();
-                setChartData(data);
+                if (data.success) {
+                  setChartData(data.data);
+                }
             } else {
                 console.error('Failed to fetch chart data for pair:', selectedPair);
                 setChartData({ candles: [], trades: [] }); // Clear data on error
@@ -210,7 +212,9 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
           });
           if (response.ok) {
             const data = await response.json();
-            setChartData(data);
+            if (data.success) {
+              setChartData(data.data);
+            }
           } else {
             console.error('Failed to fetch chart data for pair:', selectedPair);
             setChartData({ candles: [], trades: [] });
@@ -250,7 +254,9 @@ export function EnhancedTradingChart({ backtestId, initialData, className }: Enh
         });
         if (response.ok && isMounted) {
           const data = await response.json();
-          setChartData(data);
+          if (data.success) {
+            setChartData(data.data);
+          }
         } else if (isMounted) {
           console.error('Failed to fetch chart data for pair:', selectedPair);
           setChartData({ candles: [], trades: [] });

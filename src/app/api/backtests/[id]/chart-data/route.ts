@@ -75,6 +75,10 @@ async function readCandlestickDataFromFile(
   console.log(`Reading and parsing candle data from: ${filePath}`);
 
   try {
+    if (path.extname(filePath) !== '.json') {
+      console.log(`Skipping non-JSON file: ${filePath}`);
+      return null;
+    }
     const fileContent = await fs.readFile(filePath, 'utf-8');
     const data = JSON.parse(fileContent);
 
@@ -184,13 +188,29 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     
     // Validate query parameters
-    const query = {
+    const query: Record<string, any> = {
       timeframe: searchParams.get('timeframe') || '5m',
-      pair: searchParams.get('pair'),
-      limit: searchParams.get('limit'),
-      offset: searchParams.get('offset'),
-      startTime: searchParams.get('startTime'),
-      endTime: searchParams.get('endTime')
+      pair: searchParams.get('pair')
+    };
+
+    const limit = searchParams.get('limit');
+    if (limit !== null) {
+      query.limit = Number(limit);
+    }
+
+    const offset = searchParams.get('offset');
+    if (offset !== null) {
+      query.offset = Number(offset);
+    }
+
+    const startTime = searchParams.get('startTime');
+    if (startTime) {
+      query.startTime = startTime;
+    }
+
+    const endTime = searchParams.get('endTime');
+    if (endTime) {
+      query.endTime = endTime;
     }
     
     const validatedQuery = validateQuery(ChartDataQuerySchema, query)

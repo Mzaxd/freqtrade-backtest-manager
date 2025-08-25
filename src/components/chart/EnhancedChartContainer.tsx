@@ -139,7 +139,7 @@ export function EnhancedChartContainer({
       seriesRef.current = candlestickSeries
 
       // Set data
-      if (data.length > 0) {
+      if (data && data.length > 0) {
         candlestickSeries.setData(data as any)
       }
 
@@ -154,7 +154,7 @@ export function EnhancedChartContainer({
         })
         volumeSeriesRef.current = volumeSeries
 
-        const volumeData = data.map(candle => ({
+        const volumeData = (data || []).map(candle => ({
           time: candle.time,
           value: candle.volume || 0,
           color: candle.close >= candle.open ? currentTheme.volumeUpColor : currentTheme.volumeDownColor,
@@ -163,7 +163,7 @@ export function EnhancedChartContainer({
       }
 
       // Add trade markers
-      if (tradeMarkers.length > 0) {
+      if (tradeMarkers && tradeMarkers.length > 0) {
         const markers = tradeMarkers.map(t => ({
           time: t.time,
           position: t.position,
@@ -182,7 +182,7 @@ export function EnhancedChartContainer({
 
       chart.subscribeClick((param: MouseEventParams) => {
         if (param.point && param.time) {
-          const clickedTrade = tradeMarkers.find(trade => trade.time === param.time)
+          const clickedTrade = (tradeMarkers || []).find(trade => trade.time === param.time)
           if (clickedTrade) {
             onTradeClick?.(clickedTrade.tradeData)
           }
@@ -198,10 +198,13 @@ export function EnhancedChartContainer({
         })
         gestureManagerRef.current.on('zoom', (event) => {
           // Handle zoom gesture
-          chart.timeScale().setVisibleRange({
-            from: data[0]?.time || 0,
-            to: data[data.length - 1]?.time || Date.now(),
-          })
+          if (data && data.length > 1) {
+            const from = data[0].time;
+            const to = data[data.length - 1].time;
+            if (from && to) {
+              chart.timeScale().setVisibleRange({ from, to });
+            }
+          }
         })
       }
 
@@ -220,9 +223,9 @@ export function EnhancedChartContainer({
       })
 
       // Calculate performance metrics
-      if (data.length > 0) {
+      if (data && data.length > 0) {
         const metrics = calculateCompletePerformanceMetrics(
-          tradeMarkers.map(t => t.tradeData).filter(Boolean),
+          (tradeMarkers || []).map(t => t.tradeData).filter(Boolean),
           10000
         )
         setState(prev => ({ ...prev, performanceMetrics: metrics }))
@@ -593,7 +596,7 @@ export function EnhancedChartContainer({
         chartTitle="Trading Chart"
         chartDescription="Interactive candlestick chart with technical indicators and drawing tools"
         shortcutsHelp="Use keyboard shortcuts for quick actions. Press ? to see all shortcuts."
-        dataSummary={`${data.length} data points loaded`}
+        dataSummary={`${data?.length || 0} data points loaded`}
       >
         <ChartLayout
           chart={
